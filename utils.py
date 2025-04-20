@@ -1,7 +1,7 @@
 """
 工具包
 + get_data_file_path: 获取当天数据库文件, 假如没有, 则向之前的日期寻找, 直到进入2024年
-+ tree_has_path: 判断一个分类"树"是否存在
++ tree_has_path: 判断一个类别"路径"是否在类别树上(不一定到叶子)
 """
 
 import datetime
@@ -9,13 +9,6 @@ import os
 import shutil
 
 DATA_DIR = "data"
-
-
-def _copy_file(src_file_path: str, dst_file_path: str):
-    assert os.path.exists(src_file_path), f"文件 {src_file_path} 不存在"
-    # assert not os.path.exists(dst_file_path), f"文件 {dst_file_path} 已存在"
-
-    shutil.copy(src_file_path, dst_file_path)
 
 
 def _build_data_file_path_from_date(t: datetime.datetime) -> str:
@@ -43,7 +36,8 @@ def get_data_file_path() -> str:
 
 def _dfs(root: dict, keys: list[str], cur_idx: int) -> bool:
     if cur_idx == len(keys):
-        return True
+        return isinstance(root, dict) and len(root) == 0  # 到达叶子
+        # return True  # 没有到达叶子
     if keys[cur_idx] not in root.keys():
         return False
     return _dfs(root[keys[cur_idx]], keys, cur_idx + 1)
