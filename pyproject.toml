@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "zaccount"
+version = "0.1.0"
+description = ""
+authors = ["zweix123 <11680125+zweix123@user.noreply.gitee.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.13"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

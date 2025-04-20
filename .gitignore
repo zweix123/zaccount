@@ -1,0 +1,14 @@
+# OS
+
+# IDE
+## VSCode
+.vscode
+
+# Programming Languages
+## Python
+.venv
+.mypy_cache
+**/__pycache__
+
+# Project
+data
