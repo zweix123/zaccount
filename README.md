@@ -8,11 +8,13 @@
 
 transaction
 
-| field     | type    | description                                  |
-| --------- | ------- | -------------------------------------------- |
-| date      | date    | 日期                                         |
-| type      | varchar | 类型(枚举)                                   |
-| amount    | decimal | 金额                                         |
-| categorys | varchar | 类别(逗号分隔的枚举), 通过前后位置表父子结构 |
-| tags      | varchar | 标签(逗号分割的枚举), 标签之间无关, 用于聚类 |
-| desc      | varchar | 描述                                         |
+| field     | type    | description                                    |
+| --------- | ------- | ---------------------------------------------- |
+| date      | date    | 日期                                           |
+| type      | varchar | 类型(枚举)                                     |
+| amount    | decimal | 金额                                           |
+| categorys | varchar | 类别(逗号分隔的枚举), 通过前后位置表示父子结构 |
+| tags      | varchar | 标签(逗号分割的枚举), 标签之间无关, 用于聚类   |
+| desc      | varchar | 描述                                           |
+
+type 与 categorys 枚举见[ctg.py](ctg.py), 通过 dict 表示树形结构
