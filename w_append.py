@@ -7,33 +7,30 @@ import os
 
 import pandas as pd
 
+from r_check import check_apply_data
 from utils import get_data_file_path
 
 INPUT_FILE_NAME = "input.xlsx"
 if not os.path.exists(INPUT_FILE_NAME):
     raise FileNotFoundError(f"文件 {INPUT_FILE_NAME} 不存在")
 
-answer = input("确定追加(y/n)?")
-if answer != "y":
-    print("取消追加")
-    exit()
-
 
 filepath = get_data_file_path()
 table = pd.read_csv(filepath, dtype={0: str})  # （保持原始字符串格式）
 input_table = pd.read_excel(INPUT_FILE_NAME)
 
-# 格式化日期
-try:
-    input_table.iloc[:, 0] = pd.to_datetime(
-        input_table.iloc[:, 0], errors="coerce"
-    ).dt.strftime("%Y-%m-%d")
-except:
-    input_table.iloc[:, 0] = input_table.iloc[:, 0].astype(str).str[:10]
+input_table.iloc[:, 0] = pd.to_datetime(
+    input_table.iloc[:, 0], errors="coerce"
+).dt.strftime("%Y-%m-%d")
 
+print(input_table)
+
+check_apply_data(table, input_table)
+
+answer = input("确定追加(y/n)?")
+if answer != "y":
+    print("取消追加")
+    exit()
 
 table = pd.concat([table, input_table], ignore_index=True)
-
-# table.iloc[:, 0] = pd.to_datetime(table.iloc[:, 0], errors="coerce").dt.strftime("%Y-%m-%d")
-
 table.to_csv(filepath, index=False)

@@ -29,7 +29,7 @@ def get_data_file_path() -> str:
         past_file_path = _build_data_file_path_from_date(past)
         if os.path.exists(past_file_path):
             shutil.copy(past_file_path, today_file_path)
-            return past_file_path
+            return today_file_path
 
     raise FileNotFoundError(f"数据文件不存在")
 
