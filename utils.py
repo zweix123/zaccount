@@ -36,7 +36,8 @@ def get_data_file_path() -> str:
 
 def _dfs(root: dict, keys: list[str], cur_idx: int) -> bool:
     if cur_idx == len(keys):
-        return isinstance(root, dict) and len(root) == 0  # 到达叶子
+        # return isinstance(root, dict) and len(root) == 0  # 到达叶子且没有子节点
+        return isinstance(root, dict)  # 到达叶子且有子节点
         # return True  # 没有到达叶子
     if keys[cur_idx] not in root.keys():
         return False

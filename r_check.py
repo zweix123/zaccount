@@ -58,6 +58,8 @@ def check_apply_data(pre_df: pd.DataFrame, next_df: pd.DataFrame):
     check_data(next_df)
 
     # pre_df的最后的日期应该**小于等于**next_df的第一个日期 -> 保证数据在date上面顺序
+    pre_df["date"] = pd.to_datetime(pre_df["date"])
+    next_df["date"] = pd.to_datetime(next_df["date"])
     if pre_df["date"].iloc[-1] > next_df["date"].iloc[0]:
         print("pre ", pre_df["date"].iloc[-1])
         print("next", next_df["date"].iloc[0])
