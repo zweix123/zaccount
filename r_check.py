@@ -9,7 +9,14 @@ def check_data(df: pd.DataFrame):
 
     def check_and_raise(topic: str, filtered_df: pd.DataFrame):
         if len(filtered_df) != 0:
-            raise Exception(topic)
+            error_rows = filtered_df.index.tolist()
+            error_details = "\n".join(
+                [
+                    f"行号 {idx + 1}: {filtered_df.loc[idx].to_dict()}"
+                    for idx in error_rows
+                ]
+            )
+            raise Exception(f"{topic}\n问题数据:\n{error_details}")
 
     check_and_raise("存在空行", copy_df[copy_df.isna().all(axis=1)])
 
