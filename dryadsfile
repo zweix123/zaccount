@@ -1,0 +1,67 @@
+from dryads import Dryads, argv  # type: ignore
+
+from entry import EntryList
+from utils import get_data_file_path
+
+
+class Operation:
+    def __init__(self, method: str) -> None:
+        assert method in ["w", "r"], f"method {method}"
+        self.method = method
+        self.filepath = get_data_file_path()
+        self.data: EntryList = EntryList([])
+
+    def __enter__(self) -> "Operation":
+        self.data = EntryList.from_csv_file(self.filepath)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        if self.method == "w":
+            self.data.to_csv_file(self.filepath)
+
+
+def sum():
+    """计算资产总额"""
+    with Operation("r") as op:
+        print(f"资产总额: {op.data.sum():,.2f}元")
+
+
+def add():
+    """记账"""
+    with Operation("w") as op:
+        if len(argv) != 1:
+            print("Need filepath")
+            return
+        filepath = argv[0]
+        print(f"filepath: {filepath}")
+
+        if filepath.endswith("csv"):
+            op.data = EntryList.concat(op.data, EntryList.from_csv_file(filepath))
+        elif filepath.endswith("xlsx"):
+            op.data = EntryList.concat(op.data, EntryList.from_xlsx_file(filepath))
+        else:
+            raise Exception(f"filepath {filepath} is not a csv or xlsx file")
+
+    sum()
+
+
+def tags():
+    """查看所有标签"""
+    with Operation("r") as op:
+        tags = set()
+        for entry in op.data:
+            tags.update(entry.tags)
+        print(tags)
+
+
+Dryads(
+    {
+        "read": {
+            "sum": sum,
+            "tags": tags,
+        },
+        "write": {
+            "add": add,
+        },
+    }
+)

@@ -7,7 +7,13 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.13"
+dryads = "^2.0.0"
+openpyxl = "^3.1.5"
+types-openpyxl = "^3.1.5.20250602"
 
+
+[tool.poetry.group.dev.dependencies]
+rich = "^14.0.0"
 
 [build-system]
 requires = ["poetry-core"]
