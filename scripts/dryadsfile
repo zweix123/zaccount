@@ -1,7 +1,6 @@
 from dryads import Dryads, argv  # type: ignore
-
-from entry import EntryList
-from utils import get_data_file_path
+from entry import EntryList  # type: ignore
+from utils import get_data_file_path  # type: ignore
 
 
 class Operation:
@@ -54,14 +53,38 @@ def tags():
         print(tags)
 
 
-Dryads(
-    {
-        "read": {
-            "sum": sum,
-            "tags": tags,
-        },
-        "write": {
-            "add": add,
-        },
-    }
-)
+def search_tag():
+    """搜索标签"""
+    if len(argv) != 1:
+        print("Need tag")
+        return
+    tag = argv[0]
+    print(f"tag: {tag}")
+    result = []
+    with Operation("r") as op:
+        for entry in op.data:
+            if tag in entry.tags:
+                result.append(entry)
+    for line in result:
+        print(line)
+
+
+def server():
+    pass
+
+
+cmds = {
+    "read": {
+        "sum": sum,
+        "tags": tags,
+    },
+    "write": {
+        "add": add,
+    },
+    "search": {
+        "tag": search_tag,
+    },
+    "server": server,
+}
+
+Dryads(cmds)  # type: ignore

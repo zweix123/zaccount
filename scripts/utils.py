@@ -2,14 +2,27 @@ import datetime
 import os
 import shutil
 
-from ctg import CATEGORY_TREE
+import commentjson  # type: ignore
 
 DATA_DIR = "data"
+SCRIPT_DIR_PATH = os.path.dirname(os.path.abspath(__file__))
+PROJECT_DIR_PATH = os.path.dirname(SCRIPT_DIR_PATH)
+
+
+def _build_ctg_file_path() -> str:
+    return os.path.join(PROJECT_DIR_PATH, "config", "ctg.jsonc")
+
+
+def load_ctg() -> dict:
+    with open(_build_ctg_file_path(), "r", encoding="utf-8") as f:
+        return commentjson.load(f)
 
 
 def _build_data_file_path_from_date(date: datetime.datetime) -> str:
     return os.path.join(
-        DATA_DIR, f"data_{date.year}-{date.month:02d}-{date.day:02d}.csv"
+        PROJECT_DIR_PATH,
+        DATA_DIR,
+        f"transaction_{date.year}-{date.month:02d}-{date.day:02d}.csv",
     )
 
 
@@ -32,7 +45,7 @@ def get_data_file_path() -> str:
 
 
 def check_categorys(type: str, categorys: list[str]) -> bool:
-    node = CATEGORY_TREE[type]
+    node = load_ctg()[type]
     for c in categorys:
         if c not in node:
             return False
@@ -43,3 +56,5 @@ def check_categorys(type: str, categorys: list[str]) -> bool:
 
 if __name__ == "__main__":
     print(get_data_file_path())
+    print(_build_ctg_file_path())
+    print(load_ctg())

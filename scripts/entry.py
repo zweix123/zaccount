@@ -2,9 +2,7 @@ import csv
 from datetime import datetime
 
 import openpyxl
-
-from ctg import CATEGORY_TREE
-from utils import check_categorys, get_data_file_path
+from utils import check_categorys, get_data_file_path, load_ctg
 
 ENTRY_KEYS = ["date", "type", "amount", "categorys", "tags", "desc"]
 
@@ -15,8 +13,8 @@ SUM_FACTOR: dict[str, float] = {
     "转出": -1,
 }
 assert set(SUM_FACTOR.keys()) == set(
-    CATEGORY_TREE.keys()
-), f"缺少或者多余的类别: {set(SUM_FACTOR.keys()) ^ set(CATEGORY_TREE.keys())}"
+    load_ctg().keys()
+), f"缺少或者多余的类别: {set(SUM_FACTOR.keys()) ^ set(load_ctg().keys())}"
 
 
 class Entry:
@@ -57,8 +55,8 @@ class Entry:
         type_field = data["type"]
         if len(type_field) == 0:
             raise Exception(f"type {type_field} is empty")
-        if type_field not in CATEGORY_TREE:
-            raise Exception(f"type {type_field} not in CATEGORY_TREE")
+        if type_field not in load_ctg():
+            raise Exception(f"type {type_field} not in load_ctg()")
         # amount
         try:
             amount_field = float(data["amount"])
@@ -75,7 +73,7 @@ class Entry:
             )
         if not check_categorys(type_field, categorys_field):
             raise Exception(
-                f"categorys {categorys_field} not in CATEGORY_TREE[{type_field}]"
+                f"categorys {categorys_field} not in load_ctg()[{type_field}]"
             )
         # tags
         tags_field: list[str] = []
