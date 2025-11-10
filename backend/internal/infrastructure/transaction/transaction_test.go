@@ -18,13 +18,13 @@ func TestUnmarshalRow(t *testing.T) {
 	}{
 		{
 			name:    "正常情况",
-			record:  []string{"2025-01-01", "转入", "1000.50", "餐饮", "午餐", "测试描述1"},
+			record:  []string{"2025-01-01", "转入", "1000.50", "红包", "午餐", "测试描述1"},
 			wantErr: false,
 			validate: func(t *testing.T, transaction *Transaction) {
 				assert.Equal(t, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), transaction.Date)
 				assert.Equal(t, TransactionTypeTransferIn, transaction.Type)
 				assert.Equal(t, 1000.50, transaction.Amount)
-				assert.Equal(t, []string{"餐饮"}, transaction.Categorys)
+				assert.Equal(t, []string{"红包"}, transaction.Categorys)
 				assert.Equal(t, []string{"午餐"}, transaction.Tags)
 				assert.Equal(t, "测试描述1", transaction.Desc)
 			},
@@ -51,11 +51,11 @@ func TestUnmarshalRow(t *testing.T) {
 		},
 		{
 			name:    "带空格的数据",
-			record:  []string{"2025-01-01 ", " 转入 ", " 1000.50 ", "餐饮,晚饭", "标签1,标签2", " 测试描述 "},
+			record:  []string{"2025-01-01 ", " 支出 ", " 1000.50 ", "餐饮,晚饭", "标签1,标签2", " 测试描述 "},
 			wantErr: false,
 			validate: func(t *testing.T, transaction *Transaction) {
 				assert.Equal(t, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), transaction.Date)
-				assert.Equal(t, TransactionTypeTransferIn, transaction.Type)
+				assert.Equal(t, TransactionTypeExpense, transaction.Type)
 				assert.Equal(t, 1000.50, transaction.Amount)
 				assert.Equal(t, []string{"餐饮", "晚饭"}, transaction.Categorys)
 				assert.Equal(t, []string{"标签1", "标签2"}, transaction.Tags)
@@ -99,6 +99,12 @@ func TestUnmarshalRow(t *testing.T) {
 			errContains: "invalid date",
 		},
 		{
+			name:        "无效交易类型",
+			record:      []string{"2025-01-01", "无效类型", "1000.00", "测试", "", "测试"},
+			wantErr:     true,
+			errContains: "invalid transaction type",
+		},
+		{
 			name:        "无效金额",
 			record:      []string{"2025-01-01", "转入", "not_a_number", "测试", "", "测试"},
 			wantErr:     true,
@@ -128,12 +134,13 @@ func TestUnmarshalRow(t *testing.T) {
 	transactionTypes := []struct {
 		name     string
 		typeStr  string
+		category string
 		expected TransactionType
 	}{
-		{"收入类型", "收入", TransactionTypeIncome},
-		{"支出类型", "支出", TransactionTypeExpense},
-		{"转入类型", "转入", TransactionTypeTransferIn},
-		{"转出类型", "转出", TransactionTypeTransferOut},
+		{"收入类型", "收入", "工资", TransactionTypeIncome},
+		{"支出类型", "支出", "餐饮", TransactionTypeExpense},
+		{"转入类型", "转入", "对齐", TransactionTypeTransferIn},
+		{"转出类型", "转出", "对齐", TransactionTypeTransferOut},
 	}
 
 	for _, tt := range transactionTypes {
@@ -145,7 +152,7 @@ func TestUnmarshalRow(t *testing.T) {
 			validate    func(t *testing.T, transaction *Transaction)
 		}{
 			name:    tt.name,
-			record:  []string{"2025-01-01", tt.typeStr, "100.00", "测试", "", ""},
+			record:  []string{"2025-01-01", tt.typeStr, "100.00", tt.category, "", ""},
 			wantErr: false,
 			validate: func(t *testing.T, transaction *Transaction) {
 				assert.Equal(t, tt.expected, transaction.Type)
@@ -252,6 +259,32 @@ func TestLoadTable(t *testing.T) {
 			if tc.validate != nil {
 				tc.validate(t, transactions)
 			}
+		})
+	}
+}
+
+// ========== IsValidTransactionType 单元测试 ==========
+
+func TestIsValidTransactionType(t *testing.T) {
+	testCases := []struct {
+		name     string
+		tt       TransactionType
+		expected bool
+	}{
+		{"有效-收入", TransactionTypeIncome, true},
+		{"有效-支出", TransactionTypeExpense, true},
+		{"有效-转入", TransactionTypeTransferIn, true},
+		{"有效-转出", TransactionTypeTransferOut, true},
+		{"无效-空字符串", TransactionType(""), false},
+		{"无效-随机字符串", TransactionType("随机类型"), false},
+		{"无效-部分匹配", TransactionType("收"), false},
+		{"无效-大小写敏感", TransactionType("INCOME"), false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := IsValidTransactionType(tc.tt)
+			assert.Equal(t, tc.expected, result, "IsValidTransactionType(%q) = %v, want %v", tc.tt, result, tc.expected)
 		})
 	}
 }

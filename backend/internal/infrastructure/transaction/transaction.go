@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	ctg "github.com/zweix123/zaccount/backend/internal/domain/ctg"
 )
 
 // 表头
@@ -38,6 +40,19 @@ const (
 	TransactionTypeTransferIn  TransactionType = "转入"
 	TransactionTypeTransferOut TransactionType = "转出"
 )
+
+// 有效的交易类型集合
+var validTransactionTypes = map[TransactionType]bool{
+	TransactionTypeIncome:      true,
+	TransactionTypeExpense:     true,
+	TransactionTypeTransferIn:  true,
+	TransactionTypeTransferOut: true,
+}
+
+// IsValidTransactionType 检查给定的 TransactionType 是否是有效的枚举值
+func IsValidTransactionType(t TransactionType) bool {
+	return validTransactionTypes[t]
+}
 
 // 交易表的行的数据结构
 type Transaction struct {
@@ -131,8 +146,11 @@ func unmarshalRow(record []string) (*Transaction, error) {
 	}
 
 	// 解析类型
-	// TODO(zweix): 添加检测
-	transactionType := TransactionType(strings.TrimSpace(record[1]))
+	typeStr := strings.TrimSpace(record[1])
+	transactionType := TransactionType(typeStr)
+	if !IsValidTransactionType(transactionType) {
+		return nil, fmt.Errorf("invalid transaction type: %s, expected one of: 收入, 支出, 转入, 转出", typeStr)
+	}
 
 	// 解析金额
 	amount, err := strconv.ParseFloat(strings.TrimSpace(record[2]), 64)
@@ -141,7 +159,6 @@ func unmarshalRow(record []string) (*Transaction, error) {
 	}
 
 	// 解析类别（逗号分隔）
-	// TODO(zweix): 添加枚举正确性
 	categoryStr := strings.TrimSpace(record[3])
 	var category []string
 	if categoryStr != "" {
@@ -149,6 +166,9 @@ func unmarshalRow(record []string) (*Transaction, error) {
 		for j := range category {
 			category[j] = strings.TrimSpace(category[j])
 		}
+	}
+	if isValid := ctg.GetInstance().IsValid(string(transactionType), category); !isValid {
+		return nil, fmt.Errorf("invalid category: %s for transaction type: %s", categoryStr, transactionType)
 	}
 
 	// 解析标签（逗号分隔）
