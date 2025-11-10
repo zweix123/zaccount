@@ -3,6 +3,8 @@ package util
 import (
 	"path/filepath"
 	"runtime"
+
+	"github.com/zweix123/suger/common"
 )
 
 func genRalePath(dir string, path ...string) string {
@@ -21,8 +23,6 @@ func genRalePath(dir string, path ...string) string {
 
 func GetRalePath(path ...string) string {
 	_, file, _, ok := runtime.Caller(1)
-	if !ok {
-		panic("failed to get caller")
-	}
+	common.Assert(ok, "failed to get caller")
 	return genRalePath(filepath.Dir(file), path...)
 }

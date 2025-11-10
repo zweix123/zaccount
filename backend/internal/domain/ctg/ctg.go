@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"sync"
 
+	"github.com/zweix123/suger/common"
 	"github.com/zweix123/zaccount/backend/common/util"
 )
 
@@ -30,14 +31,10 @@ func GetInstance() *Ctg {
 func (c *Ctg) init(ctgPath string) {
 	fmt.Println("load ctg from: ", ctgPath)
 	data, err := os.ReadFile(ctgPath)
-	if err != nil {
-		panic(fmt.Errorf("failed to read file: %w", err))
-	}
+	common.Assert(err == nil, fmt.Sprintf("failed to read file: %v", err))
 	data = removeJSONCComments(data)
 	err = json.Unmarshal(data, &c.data)
-	if err != nil {
-		panic(fmt.Errorf("failed to unmarshal file: %w", err))
-	}
+	common.Assert(err == nil, fmt.Sprintf("failed to unmarshal file: %v", err))
 	fmt.Println("load ctg success")
 }
 
