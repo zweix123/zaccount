@@ -32,7 +32,7 @@ type 与 categorys 枚举见[config/ctg.jsonc](config/ctg.jsonc), 通过 dict �
 ├── backend        # 后端
 ├── web            # 前端
 └── scripts        # 脚本
-    ├── dryadsfile
+    ├── dryadsfile #
     └── pyproject.toml
 ```
 
