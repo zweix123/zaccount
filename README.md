@@ -40,4 +40,24 @@ type 与 categorys 枚举见[config/ctg.jsonc](config/ctg.jsonc), 通过 dict �
 
 后端使用 Golang 语言实现，不使用任何后端框架
 
+#### 运行 API 服务器
+
+```bash
+cd backend
+go run cmd/api/main.go
+```
+
+服务器默认运行在 `http://localhost:8080`，可以通过环境变量 `PORT` 修改端口：
+
+```bash
+PORT=3000 go run cmd/api/main.go
+```
+
 ### 前端实现
+
+前端使用 Amis 和 ECharts，通过后端 API 服务器提供静态文件服务。
+
+#### 快速开始
+
+1. 启动后端 API 服务器（见上方）
+2. 在浏览器中访问 `http://localhost:8080`
