@@ -3,6 +3,8 @@ package transaction
 import (
 	"fmt"
 	"time"
+
+	"github.com/zweix123/zaccount/backend/common/logger"
 )
 
 // 表头
@@ -79,7 +81,7 @@ func Init(dataPath string) error {
 		filePath: filePath,
 		data:     table,
 	}
-	fmt.Println("load table success, row number: ", len(table))
+	logger.Debug("load table success, row number: %d", len(table))
 	return nil
 }
 
@@ -88,7 +90,7 @@ func Close() error {
 	if err != nil {
 		return fmt.Errorf("failed to update table: %w", err)
 	}
-	fmt.Println("update table success, row number: ", len(globalTransactionTable.data))
+	logger.Debug("update table success, row number: %d", len(globalTransactionTable.data))
 	globalTransactionTable = nil
 	return nil
 }

@@ -5,14 +5,17 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/zweix123/zaccount/backend/common/util"
 )
 
 const (
 	callDepth = 4
 )
+
+var projectRootPath = util.GetRalePath("..", "..", "..")
 
 type CustomHandler struct {
 	handler slog.Handler
@@ -69,9 +72,13 @@ func (h *CustomHandler) Handle(ctx context.Context, r slog.Record) error { // �
 	var codeStr string
 	pc, f, n, ok := runtime.Caller(callDepth)
 	if ok {
-		f = filepath.Base(f)
-		dir := runtime.FuncForPC(pc).Name()
-		codeStr = fmt.Sprintf("%s/%s:%d", dir, f, n)
+		// f = filepath.Base(f)
+		_ = pc
+		// dir := runtime.FuncForPC(pc).Name()
+		// codeStr = fmt.Sprintf("%s/%s:%d", dir, f, n)
+		// TODO(zweix): 性能优化, 避免每次都需要字符串操作, 还有就是可以使用字节的对象池
+		f = strings.TrimPrefix(f, projectRootPath+"/")
+		codeStr = fmt.Sprintf("%s:%d", f, n)
 	} else {
 		codeStr = "???:0"
 	}

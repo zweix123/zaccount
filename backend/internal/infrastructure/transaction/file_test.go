@@ -69,7 +69,7 @@ func TestFindTableFile(t *testing.T) {
 					"transaction_2025-02-01.csv",
 				}
 				for _, fileName := range files {
-					err := os.WriteFile(filepath.Join(tmpDir, fileName), []byte("test"), 0644)
+					err := os.WriteFile(filepath.Join(tmpDir, fileName), []byte("test"), 0o644)
 					assert.NoError(t, err)
 				}
 				return tmpDir, func() { os.RemoveAll(tmpDir) }
@@ -118,7 +118,7 @@ func TestFindTableFile(t *testing.T) {
 					"transaction_2025-13-01.csv": []byte("test"), // 无效日期
 				}
 				for fileName, content := range files {
-					err := os.WriteFile(filepath.Join(tmpDir, fileName), content, 0644)
+					err := os.WriteFile(filepath.Join(tmpDir, fileName), content, 0o644)
 					assert.NoError(t, err)
 				}
 				return tmpDir, func() { os.RemoveAll(tmpDir) }
@@ -144,7 +144,7 @@ func TestFindTableFile(t *testing.T) {
 					{"transaction_2025-01-10.csv", "2025-01-10"},
 				}
 				for _, f := range files {
-					err := os.WriteFile(filepath.Join(tmpDir, f.name), []byte("test"), 0644)
+					err := os.WriteFile(filepath.Join(tmpDir, f.name), []byte("test"), 0o644)
 					assert.NoError(t, err)
 				}
 				return tmpDir, func() { os.RemoveAll(tmpDir) }
@@ -199,7 +199,7 @@ func TestFindAndCopyTableFile(t *testing.T) {
 				oldFileName := fmt.Sprintf("transaction_%s.csv", yesterday.Format(time.DateOnly))
 				oldFilePath := filepath.Join(tmpDir, oldFileName)
 				testContent := []byte("date,type,amount\n2025-01-01,转入,1000.00")
-				err = os.WriteFile(oldFilePath, testContent, 0644)
+				err = os.WriteFile(oldFilePath, testContent, 0o644)
 				assert.NoError(t, err)
 				return tmpDir, testContent, func() { os.RemoveAll(tmpDir) }
 			},
@@ -228,7 +228,7 @@ func TestFindAndCopyTableFile(t *testing.T) {
 				todayFileName := fmt.Sprintf("transaction_%s.csv", today)
 				todayFilePath := filepath.Join(tmpDir, todayFileName)
 				testContent := []byte("date,type,amount\n2025-01-01,转入,1000.00")
-				err = os.WriteFile(todayFilePath, testContent, 0644)
+				err = os.WriteFile(todayFilePath, testContent, 0o644)
 				assert.NoError(t, err)
 				return tmpDir, testContent, func() { os.RemoveAll(tmpDir) }
 			},

@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/zweix123/suger/common"
+	"github.com/zweix123/zaccount/backend/common/logger"
 	"github.com/zweix123/zaccount/backend/common/util"
 )
 
@@ -29,13 +30,13 @@ func GetInstance() *Ctg {
 }
 
 func (c *Ctg) init(ctgPath string) {
-	fmt.Println("load ctg from: ", ctgPath)
+	logger.Debug("load ctg from: %s", ctgPath)
 	data, err := os.ReadFile(ctgPath)
 	common.Assert(err == nil, fmt.Sprintf("failed to read file: %v", err))
 	data = removeJSONCComments(data)
 	err = json.Unmarshal(data, &c.data)
 	common.Assert(err == nil, fmt.Sprintf("failed to unmarshal file: %v", err))
-	fmt.Println("load ctg success")
+	logger.Debug("load ctg success")
 }
 
 func removeJSONCComments(data []byte) []byte {
