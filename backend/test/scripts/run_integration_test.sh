@@ -25,14 +25,50 @@ MAX_WAIT_TIME=30  # 最大等待时间（秒）
 # 后端服务器进程 ID
 SERVER_PID=""
 
-# 清理函数：停止后端服务器
+# 清理函数：停止后端服务器并释放端口
 cleanup() {
+    echo ""
+    echo "开始清理..."
+    
+    # 清理主进程
     if [ -n "$SERVER_PID" ]; then
-        echo ""
         echo "正在停止后端服务器 (PID: $SERVER_PID)..."
+        # 先尝试优雅终止
         kill "$SERVER_PID" 2>/dev/null || true
+        sleep 1
+        # 如果进程还在运行，强制终止
+        if kill -0 "$SERVER_PID" 2>/dev/null; then
+            echo "进程仍在运行，强制终止..."
+            kill -9 "$SERVER_PID" 2>/dev/null || true
+        fi
         wait "$SERVER_PID" 2>/dev/null || true
-        echo "后端服务器已停止"
+        echo "后端服务器进程已停止"
+    fi
+    
+    # 清理所有占用端口的进程（包括可能的子进程）
+    if check_port; then
+        echo "检测到端口 ${SERVER_PORT} 仍被占用，清理所有占用该端口的进程..."
+        if command -v lsof >/dev/null 2>&1; then
+            PIDS=$(lsof -ti:${SERVER_PORT} 2>/dev/null || true)
+            if [ -n "$PIDS" ]; then
+                for pid in $PIDS; do
+                    if [ "$pid" != "$$" ]; then  # 不终止自己
+                        echo "终止占用端口的进程: $pid"
+                        kill -9 "$pid" 2>/dev/null || true
+                    fi
+                done
+                sleep 2  # 等待端口释放
+            fi
+        fi
+        
+        # 再次检查端口是否已释放
+        if check_port; then
+            echo "⚠️  警告: 端口 ${SERVER_PORT} 可能仍被占用"
+        else
+            echo "✓ 端口 ${SERVER_PORT} 已释放"
+        fi
+    else
+        echo "✓ 端口 ${SERVER_PORT} 已释放"
     fi
 }
 
@@ -92,16 +128,26 @@ echo ""
 # 检查是否已有服务器在运行
 if check_port; then
     echo "⚠️  警告: 端口 ${SERVER_PORT} 已被占用"
-    echo "   如果这是另一个测试实例，请先停止它"
-    # 在非交互式环境中自动继续，交互式环境中询问用户
-    if [ -t 0 ]; then
-        read -p "   是否继续？(y/N) " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            exit 1
+    echo "   尝试清理占用该端口的进程..."
+    
+    # 尝试清理占用端口的进程
+    if command -v lsof >/dev/null 2>&1; then
+        PIDS=$(lsof -ti:${SERVER_PORT} 2>/dev/null || true)
+        if [ -n "$PIDS" ]; then
+            for pid in $PIDS; do
+                echo "   终止占用端口的进程: $pid"
+                kill -9 "$pid" 2>/dev/null || true
+            done
+            sleep 2  # 等待端口释放
         fi
+    fi
+    
+    # 再次检查端口
+    if check_port; then
+        echo "❌ 无法释放端口 ${SERVER_PORT}，请手动停止占用该端口的进程"
+        exit 1
     else
-        echo "   非交互式环境，自动继续..."
+        echo "✓ 端口 ${SERVER_PORT} 已释放"
     fi
 fi
 
