@@ -22,5 +22,5 @@ func main() {
 	transaction.Init(*dataPath)
 	defer transaction.Close()
 
-	fmt.Printf("sum: %.2f\n", transaction.Sum())
+	fmt.Printf("sum: %.2f\n", transaction.GetData().Sum())
 }

@@ -16,6 +16,8 @@ BACKEND_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PROJECT_ROOT="$(cd "$BACKEND_DIR/../.." && pwd)"
 # 集成测试目录
 INTEGRATION_DIR="$(cd "$SCRIPT_DIR/../integration" && pwd)"
+# 测试数据目录
+TEST_DATA_DIR="$(cd "$SCRIPT_DIR/../fixtures/mock-data" && pwd)"
 
 # 服务器配置
 SERVER_PORT=8080
@@ -151,10 +153,28 @@ if check_port; then
     fi
 fi
 
+# 准备测试数据目录
+echo "准备测试数据..."
+echo "测试数据目录: $TEST_DATA_DIR"
+if [ ! -d "$TEST_DATA_DIR" ]; then
+    echo "❌ 测试数据目录不存在: $TEST_DATA_DIR"
+    exit 1
+fi
+
+# 检查测试数据文件是否存在
+TEST_DATA_FILE=$(find "$TEST_DATA_DIR" -name "transaction_*.csv" | head -1)
+if [ -z "$TEST_DATA_FILE" ]; then
+    echo "❌ 未找到测试数据文件 (transaction_*.csv)"
+    exit 1
+fi
+echo "使用测试数据文件: $TEST_DATA_FILE"
+echo ""
+
 # 启动后端服务器
 echo "启动后端服务器..."
+echo "使用数据目录: $TEST_DATA_DIR"
 cd "$BACKEND_DIR"
-go run cmd/api/main.go > /tmp/backend_server.log 2>&1 &
+go run cmd/api/main.go --data-path="$TEST_DATA_DIR" --log-level=debug > /tmp/backend_server.log 2>&1 &
 SERVER_PID=$!
 
 echo "后端服务器进程 ID: $SERVER_PID"
@@ -168,13 +188,13 @@ if ! wait_for_server; then
     exit 1
 fi
 
-# 查找所有集成测试文件
+# 查找所有集成测试文件（查找 *_test.py 文件）
 echo ""
 echo "查找集成测试文件..."
-TEST_FILES=($(find "$INTEGRATION_DIR" -name "test.py" -type f | sort))
+TEST_FILES=($(find "$INTEGRATION_DIR" -name "*_test.py" -type f | sort))
 
 if [ ${#TEST_FILES[@]} -eq 0 ]; then
-    echo "❌ 未找到任何集成测试文件 (test.py)"
+    echo "❌ 未找到任何集成测试文件 (*_test.py)"
     exit 1
 fi
 
@@ -196,7 +216,8 @@ declare -a TEST_NAMES=()
 
 # 启动所有测试（并行）
 for test_file in "${TEST_FILES[@]}"; do
-    test_name=$(basename $(dirname "$test_file"))
+    # 从文件名提取测试名称（去掉路径和 _test.py 后缀）
+    test_name=$(basename "$test_file" _test.py)
     echo "启动测试: $test_name"
     python3 "$test_file" &
     TEST_PIDS+=($!)

@@ -95,6 +95,9 @@ func Close() error {
 	return nil
 }
 
-func Sum() float64 {
-	return globalTransactionTable.data.Sum()
+func GetData() TransactionData {
+	if globalTransactionTable == nil {
+		return TransactionData{}
+	}
+	return globalTransactionTable.data
 }
