@@ -24,7 +24,7 @@ function initApp() {
             {
                 type: 'tabs',
                 tabsMode: 'line',
-                className: 'm-t-lg',
+                className: 'm-t-sm',
                 tabs: [
                     {
                         title: '概览',

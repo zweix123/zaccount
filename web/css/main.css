@@ -17,8 +17,22 @@ body {
 
 /* Tab页面容器样式 */
 .tab-content {
-    padding: 20px;
+    padding: 12px 20px;
     min-height: 400px;
+}
+
+/* 减少页面标题和内容之间的间距 */
+.app-container .cxd-Page-body {
+    padding-top: 0;
+}
+
+/* 减少 tabs 和内容之间的间距 */
+.app-container .cxd-Tabs {
+    margin-bottom: 0;
+}
+
+.app-container .cxd-Tabs-content {
+    padding-top: 12px;
 }
 
 /* 响应式设计 */
