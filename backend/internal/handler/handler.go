@@ -32,6 +32,7 @@ func Init() error {
 	// 注册API服务(业务后端)
 	http.HandleFunc("/test", HandleTest)
 	http.HandleFunc("/analyze", HandleAnalyze)
+	http.HandleFunc("/config/init", HandleConfigInit)
 
 	// 启动服务
 	addr := fmt.Sprintf(":%s", Port)
