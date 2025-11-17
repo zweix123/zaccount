@@ -226,7 +226,7 @@ send_request "${SERVER_URL}/test" "接口 1: /test (GET, 无参数)"
 # 2. 访问 /config/init 接口
 send_request "${SERVER_URL}/config/init" "接口 2: /config/init (GET, 无参数)"
 
-# 3. 访问 /analyze 接口（需要日期参数）
+# 3. 访问 /display/common 接口（需要日期参数）
 # 从数据文件中获取日期范围
 EARLIEST_DATE=$(ls "$DATA_DIR"/transaction_*.csv 2>/dev/null | head -1 | xargs basename | sed 's/transaction_\(.*\)\.csv/\1/')
 LATEST_DATE=$(ls "$DATA_DIR"/transaction_*.csv 2>/dev/null | tail -1 | xargs basename | sed 's/transaction_\(.*\)\.csv/\1/')
@@ -239,17 +239,17 @@ fi
 
 echo ""
 echo "=========================================="
-echo "接口 3: /analyze (GET, 需要 start_date 和 end_date 参数)"
+echo "接口 3: /display/common (GET, 需要 start_date 和 end_date 参数)"
 echo "=========================================="
-echo "URL: ${SERVER_URL}/analyze?start_date=${EARLIEST_DATE}&end_date=${LATEST_DATE}"
+echo "URL: ${SERVER_URL}/display/common?start_date=${EARLIEST_DATE}&end_date=${LATEST_DATE}"
 echo ""
 
 if command -v curl >/dev/null 2>&1; then
     echo "响应:"
-    curl -s -w "\nHTTP状态码: %{http_code}\n" "${SERVER_URL}/analyze?start_date=${EARLIEST_DATE}&end_date=${LATEST_DATE}" | head -20
+    curl -s -w "\nHTTP状态码: %{http_code}\n" "${SERVER_URL}/display/common?start_date=${EARLIEST_DATE}&end_date=${LATEST_DATE}" | head -20
 elif command -v wget >/dev/null 2>&1; then
     echo "响应:"
-    wget -q -O - "${SERVER_URL}/analyze?start_date=${EARLIEST_DATE}&end_date=${LATEST_DATE}" | head -20
+    wget -q -O - "${SERVER_URL}/display/common?start_date=${EARLIEST_DATE}&end_date=${LATEST_DATE}" | head -20
     echo ""
     echo "HTTP状态码: 200 (wget 不显示状态码)"
 else

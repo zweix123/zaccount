@@ -12,7 +12,7 @@ import (
 	ctg "github.com/zweix123/zaccount/backend/internal/domain/ctg"
 )
 
-func updateTable(filePath string) error {
+func writeTable(filePath string) error {
 	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)

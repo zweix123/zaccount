@@ -35,10 +35,43 @@ body {
     padding-top: 12px;
 }
 
+/* 统计分析页面样式 */
+.tab-content .cxd-Flex {
+    gap: 16px;
+}
+
+.tab-content .cxd-Card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    transition: box-shadow 0.3s;
+}
+
+.tab-content .cxd-Card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tab-content .cxd-Card-header {
+    font-weight: 600;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.tab-content .cxd-Card-body {
+    padding: 20px 16px;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
     .tab-content {
         padding: 10px;
+    }
+    
+    .tab-content .cxd-Flex {
+        flex-direction: column;
+    }
+    
+    .tab-content .cxd-Flex .cxd-Card {
+        margin-bottom: 12px;
     }
 }
 

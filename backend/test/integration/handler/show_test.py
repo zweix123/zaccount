@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-集成测试：测试 /analyze 接口
-向本地 8080 端口的 /analyze 接口发送请求并验证返回值
+集成测试：测试 /display/common 接口
+向本地 8080 端口的 /display/common 接口发送请求并验证返回值
 """
 
 import json
@@ -12,12 +12,12 @@ import urllib.request
 
 
 def test_analyze_endpoint(
-    url: str = "http://localhost:8080/analyze",
+    url: str = "http://localhost:8080/display/common",
     start_date: str = None,  # type: ignore
     end_date: str = None,  # type: ignore
 ) -> bool:
     """
-    向 /analyze 接口发送 GET 请求并处理返回值
+    向 /display/common 接口发送 GET 请求并处理返回值
 
     Args:
         url: 测试接口的基础 URL
@@ -145,7 +145,7 @@ def test_analyze_with_valid_dates() -> bool:
     print("期望: 收入1500 (1000收入+500转入), 支出550 (50+200+300转出), 结余950")
 
     try:
-        url = "http://localhost:8080/analyze?start_date=2025-01-01&end_date=2025-01-31"
+        url = "http://localhost:8080/display/common?start_date=2025-01-01&end_date=2025-01-31"
         req = urllib.request.Request(url)
         req.add_header("User-Agent", "Python Integration Test")
 
@@ -195,7 +195,7 @@ def test_analyze_with_same_date() -> bool:
     print("期望: 收入1000 (1月1日的工资), 支出0, 结余1000")
 
     try:
-        url = "http://localhost:8080/analyze?start_date=2025-01-01&end_date=2025-01-01"
+        url = "http://localhost:8080/display/common?start_date=2025-01-01&end_date=2025-01-01"
         req = urllib.request.Request(url)
         req.add_header("User-Agent", "Python Integration Test")
 
@@ -243,7 +243,7 @@ def test_analyze_missing_params() -> bool:
     """测试缺少参数"""
     print("测试: 缺少必需参数")
     try:
-        url = "http://localhost:8080/analyze"
+        url = "http://localhost:8080/display/common"
         req = urllib.request.Request(url)
         req.add_header("User-Agent", "Python Integration Test")
 
@@ -271,7 +271,7 @@ def test_analyze_invalid_date_format() -> bool:
     """测试无效日期格式"""
     print("测试: 无效日期格式")
     try:
-        url = "http://localhost:8080/analyze?start_date=2025/01/01&end_date=2025-01-31"
+        url = "http://localhost:8080/display/common?start_date=2025/01/01&end_date=2025-01-31"
         req = urllib.request.Request(url)
         req.add_header("User-Agent", "Python Integration Test")
 
@@ -298,7 +298,7 @@ def test_analyze_invalid_date_range() -> bool:
     """测试无效日期范围（开始日期晚于结束日期）"""
     print("测试: 无效日期范围（开始日期晚于结束日期）")
     try:
-        url = "http://localhost:8080/analyze?start_date=2025-01-31&end_date=2025-01-01"
+        url = "http://localhost:8080/display/common?start_date=2025-01-31&end_date=2025-01-01"
         req = urllib.request.Request(url)
         req.add_header("User-Agent", "Python Integration Test")
 
@@ -325,7 +325,7 @@ def test_analyze_wrong_method() -> bool:
     """测试错误的 HTTP 方法"""
     print("测试: 错误的 HTTP 方法 (POST)")
     try:
-        url = "http://localhost:8080/analyze?start_date=2025-01-01&end_date=2025-01-31"
+        url = "http://localhost:8080/display/common?start_date=2025-01-01&end_date=2025-01-31"
         req = urllib.request.Request(url, method="POST")
         req.add_header("User-Agent", "Python Integration Test")
 
@@ -351,7 +351,7 @@ def test_analyze_wrong_method() -> bool:
 def main():
     """主函数"""
     print("=" * 50)
-    print("开始测试 /analyze 接口")
+    print("开始测试 /display/common 接口")
     print("=" * 50)
     print()
 

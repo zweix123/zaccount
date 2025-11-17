@@ -17,7 +17,7 @@ PROJECT_ROOT="$(cd "$BACKEND_DIR/../.." && pwd)"
 # 集成测试目录
 INTEGRATION_DIR="$(cd "$SCRIPT_DIR/../integration" && pwd)"
 # 测试数据目录
-TEST_DATA_DIR="$(cd "$SCRIPT_DIR/../fixtures/mock-data" && pwd)"
+TEST_DATA_DIR="$(cd "$SCRIPT_DIR/../fixtures/api-mock-data" && pwd)"
 
 # 服务器配置
 SERVER_PORT=8080

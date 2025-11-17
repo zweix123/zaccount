@@ -29,12 +29,12 @@ func HandleConfigInit(w http.ResponseWriter, r *http.Request) {
 	var ctx context.Context = r.Context()
 
 	// 构建domain层请求
-	req := &config.GetInitDataRequest{}
+	req := &config.InitRequest{}
 
 	logger.Info("request_in||url=%s||req=%s", r.URL.String(), common.MustJsonMarshal(req))
 
 	// 调用domain层业务逻辑
-	resp, err := config.GetInitData(ctx, req)
+	resp, err := config.Init(ctx, req)
 	if err != nil {
 		// 处理业务层错误
 		logger.Error("Failed to get init data: %v", err)

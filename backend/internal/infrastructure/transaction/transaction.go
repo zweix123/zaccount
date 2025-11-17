@@ -88,7 +88,7 @@ func Init(dataPath string) error {
 
 func Close() error {
 	common.Assert(globalTransactionTable != nil, "globalTransactionTable is nil in Close")
-	err := updateTable(globalTransactionTable.filePath)
+	err := writeTable(globalTransactionTable.filePath)
 	if err != nil {
 		return fmt.Errorf("failed to update table: %w", err)
 	}

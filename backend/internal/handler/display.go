@@ -9,11 +9,11 @@ import (
 
 	"github.com/zweix123/suger/common"
 	"github.com/zweix123/zaccount/backend/common/logger"
-	"github.com/zweix123/zaccount/backend/internal/domain/analyze"
+	"github.com/zweix123/zaccount/backend/internal/domain/display"
 )
 
-// AnalyzeResponse HTTP响应数据结构
-type AnalyzeResponse struct {
+// DisplayCommonResponse HTTP响应数据结构
+type DisplayCommonResponse struct {
 	Income    float64 `json:"income"`     // 收入
 	Expense   float64 `json:"expense"`    // 支出
 	Balance   float64 `json:"balance"`    // 当前结余
@@ -21,7 +21,7 @@ type AnalyzeResponse struct {
 	EndDate   string  `json:"end_date"`   // 结束日期
 }
 
-func HandleAnalyze(w http.ResponseWriter, r *http.Request) {
+func HandleDisplayCommonData(w http.ResponseWriter, r *http.Request) {
 	// 只处理GET请求
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -54,7 +54,7 @@ func HandleAnalyze(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 构建domain层请求
-	req := &analyze.CalculateAnalyzeDataRequest{
+	req := &display.CommonRequest{
 		StartDate: startDate,
 		EndDate:   endDate,
 	}
@@ -62,10 +62,10 @@ func HandleAnalyze(w http.ResponseWriter, r *http.Request) {
 	logger.Info("request_in||url=%s||req=%s", r.URL.String(), common.MustJsonMarshal(req))
 
 	// 调用domain层业务逻辑
-	resp, err := analyze.CalculateAnalyzeData(ctx, req)
+	resp, err := display.Common(ctx, req)
 	if err != nil {
 		// 处理业务层错误
-		logger.Error("Failed to calculate analyze data: %v", err)
+		logger.Error("Failed to calculate common data: %v", err)
 		http.Error(w, fmt.Sprintf("Business logic error: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
@@ -73,7 +73,7 @@ func HandleAnalyze(w http.ResponseWriter, r *http.Request) {
 	logger.Info("response_out||url=%s||resp=%s", r.URL.String(), common.MustJsonMarshal(resp))
 
 	// 构建HTTP响应
-	response := AnalyzeResponse{
+	response := DisplayCommonResponse{
 		Income:    resp.Income,
 		Expense:   resp.Expense,
 		Balance:   resp.Balance,

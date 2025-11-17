@@ -58,7 +58,7 @@ func TestReadTable(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fixturePath := filepath.Join("..", "..", "..", "test", "fixtures", "transaction", "loadTable", tc.fixtureFile)
+			fixturePath := filepath.Join("..", "..", "..", "test", "fixtures", "transaction", "rw-mock-data", tc.fixtureFile)
 			filePath, err := filepath.Abs(fixturePath)
 			assert.NoError(t, err)
 
