@@ -20,19 +20,19 @@ func Init() error {
 		return fmt.Errorf("web directory not found: %s", webPath)
 	}
 	// 注册文件服务(页面后端)
-	fileServer := http.FileServer(http.Dir(webPath))
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" {
-			http.ServeFile(w, r, fmt.Sprintf("%s/index.html", webPath))
-			return
-		}
-		fileServer.ServeHTTP(w, r)
-	})
+	// fileServer := http.FileServer(http.Dir(webPath))
+	// http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// 	if r.URL.Path == "/" {
+	// 		http.ServeFile(w, r, fmt.Sprintf("%s/index.html", webPath))
+	// 		return
+	// 	}
+	// 	fileServer.ServeHTTP(w, r)
+	// })
 
 	// 注册API服务(业务后端)
-	http.HandleFunc("/test", HandleTest)
-	http.HandleFunc("/config/init", HandleConfigInit)
-	http.HandleFunc("/display/common", HandleDisplayCommonData)
+	http.HandleFunc("/api/test", HandleTest)
+	http.HandleFunc("/api/config/init", HandleConfigInit)
+	http.HandleFunc("/api/display/common", HandleDisplayCommonData)
 
 	// 启动服务
 	addr := fmt.Sprintf(":%s", Port)

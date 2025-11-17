@@ -1,0 +1,34 @@
+.display-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.display-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 1.5rem;
+  align-items: flex-end;
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.display-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .display-controls {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .display-cards {
+    grid-template-columns: 1fr;
+  }
+}
+

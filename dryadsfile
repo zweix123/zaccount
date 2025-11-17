@@ -2,7 +2,8 @@ from dryads import Dryads  # type: ignore
 
 CMDS = {
     "cli": "cd backend/ && go run cmd/cli/main.go -log-level=debug",
-    "api": "cd backend/ && go run cmd/api/main.go -log-level=debug",
+    "dev": "./scripts/dev.sh",
+    "prod": "./scripts/prod.sh",
     "test": {
         "ut": "cd backend/test/scripts && bash run_unit_test.sh",
         "ig": "cd backend/test/scripts && bash run_integration_test.sh",

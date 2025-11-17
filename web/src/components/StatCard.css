@@ -1,0 +1,47 @@
+.stat-card {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card-header {
+  margin-bottom: 1rem;
+}
+
+.stat-card-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #666;
+  margin: 0;
+}
+
+.stat-card-body {
+  display: flex;
+  align-items: center;
+}
+
+.stat-card-value {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.stat-card-income .stat-card-value {
+  color: #28a745;
+}
+
+.stat-card-expense .stat-card-value {
+  color: #dc3545;
+}
+
+.stat-card-balance .stat-card-value {
+  color: #007bff;
+}
+

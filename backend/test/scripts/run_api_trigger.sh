@@ -30,24 +30,9 @@ cleanup() {
     echo ""
     echo "开始清理..."
     
-    # 清理主进程
-    if [ -n "$SERVER_PID" ]; then
-        echo "正在停止后端服务器 (PID: $SERVER_PID)..."
-        # 先尝试优雅终止
-        kill "$SERVER_PID" 2>/dev/null || true
-        sleep 1
-        # 如果进程还在运行，强制终止
-        if kill -0 "$SERVER_PID" 2>/dev/null; then
-            echo "进程仍在运行，强制终止..."
-            kill -9 "$SERVER_PID" 2>/dev/null || true
-        fi
-        wait "$SERVER_PID" 2>/dev/null || true
-        echo "后端服务器进程已停止"
-    fi
-    
-    # 清理所有占用端口的进程（包括可能的子进程）
+    # 首先清理所有占用端口的进程（包括 go run 的子进程）
     if check_port; then
-        echo "检测到端口 ${SERVER_PORT} 仍被占用，清理所有占用该端口的进程..."
+        echo "检测到端口 ${SERVER_PORT} 被占用，清理所有占用该端口的进程..."
         if command -v lsof >/dev/null 2>&1; then
             PIDS=$(lsof -ti:${SERVER_PORT} 2>/dev/null || true)
             if [ -n "$PIDS" ]; then
@@ -57,16 +42,31 @@ cleanup() {
                         kill -9 "$pid" 2>/dev/null || true
                     fi
                 done
-                sleep 2  # 等待端口释放
+                sleep 1  # 等待端口释放
             fi
         fi
-        
-        # 再次检查端口是否已释放
-        if check_port; then
-            echo "⚠️  警告: 端口 ${SERVER_PORT} 可能仍被占用"
-        else
-            echo "✓ 端口 ${SERVER_PORT} 已释放"
+    fi
+    
+    # 然后清理 go run 主进程（如果还在运行）
+    if [ -n "$SERVER_PID" ]; then
+        if kill -0 "$SERVER_PID" 2>/dev/null; then
+            echo "正在停止 go run 进程 (PID: $SERVER_PID)..."
+            # 先尝试优雅终止
+            kill "$SERVER_PID" 2>/dev/null || true
+            sleep 1
+            # 如果进程还在运行，强制终止
+            if kill -0 "$SERVER_PID" 2>/dev/null; then
+                echo "进程仍在运行，强制终止..."
+                kill -9 "$SERVER_PID" 2>/dev/null || true
+            fi
+            wait "$SERVER_PID" 2>/dev/null || true
+            echo "go run 进程已停止"
         fi
+    fi
+    
+    # 再次检查端口是否已释放
+    if check_port; then
+        echo "⚠️  警告: 端口 ${SERVER_PORT} 可能仍被占用"
     else
         echo "✓ 端口 ${SERVER_PORT} 已释放"
     fi
@@ -89,10 +89,21 @@ check_port() {
 
 # 检查服务器是否就绪（通过 HTTP 请求）
 check_server_ready() {
+    # 直接检查 HTTP 端点是否响应（这会同时检查端口和 HTTP 服务）
     if command -v curl >/dev/null 2>&1; then
-        curl -s -f -o /dev/null "${SERVER_URL}/test" 2>/dev/null
+        # 使用 -f 会在 HTTP 错误时失败，但连接错误也会失败
+        # 使用 --connect-timeout 和 --max-time 来限制等待时间
+        if curl -s -f -o /dev/null --connect-timeout 1 --max-time 2 "${SERVER_URL}/api/test" 2>/dev/null; then
+            return 0
+        else
+            return 1
+        fi
     elif command -v wget >/dev/null 2>&1; then
-        wget -q -O /dev/null "${SERVER_URL}/test" 2>/dev/null
+        if wget -q -O /dev/null --timeout=2 "${SERVER_URL}/api/test" 2>/dev/null; then
+            return 0
+        else
+            return 1
+        fi
     else
         # 如果都没有，只检查端口
         check_port
@@ -104,6 +115,22 @@ wait_for_server() {
     echo "等待服务器启动..."
     local waited=0
     while [ $waited -lt $MAX_WAIT_TIME ]; do
+        # 检查 go run 进程是否还在运行（注意：go run 会启动子进程，所以这个检查可能不准确）
+        # 但我们主要依赖 HTTP 检测来判断服务器是否就绪
+        if [ -n "$SERVER_PID" ] && ! kill -0 "$SERVER_PID" 2>/dev/null; then
+            # 进程退出，但可能子进程还在运行，先检查端口
+            if check_port; then
+                # 端口还在监听，说明子进程还在运行，继续等待
+                :
+            else
+                # 端口未监听，说明服务器真的退出了
+                echo ""
+                echo "❌ 服务器进程已退出"
+                return 1
+            fi
+        fi
+        
+        # 检查服务器是否就绪（通过 HTTP 请求）
         if check_server_ready; then
             echo ""
             echo "✓ 服务器已启动并就绪 (端口 ${SERVER_PORT})"
@@ -115,6 +142,39 @@ wait_for_server() {
     done
     echo ""
     echo "❌ 服务器启动超时（等待了 ${MAX_WAIT_TIME} 秒）"
+    
+    # 输出调试信息
+    echo ""
+    echo "调试信息:"
+    echo "  go run 进程状态:"
+    if [ -n "$SERVER_PID" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
+        echo "    ✓ 进程 $SERVER_PID (go run) 仍在运行"
+    else
+        echo "    ✗ 进程 $SERVER_PID (go run) 已退出（但子进程可能仍在运行）"
+    fi
+    
+    echo "  端口状态:"
+    if check_port; then
+        echo "    ✓ 端口 ${SERVER_PORT} 正在监听"
+        if command -v lsof >/dev/null 2>&1; then
+            echo "    占用进程:"
+            lsof -ti:${SERVER_PORT} 2>/dev/null | while read pid; do
+                ps -p "$pid" -o pid,comm,args 2>/dev/null | tail -1 || true
+            done
+        fi
+    else
+        echo "    ✗ 端口 ${SERVER_PORT} 未在监听"
+    fi
+    
+    echo "  HTTP 端点测试:"
+    if command -v curl >/dev/null 2>&1; then
+        echo "    测试 ${SERVER_URL}/api/test:"
+        curl -v "${SERVER_URL}/api/test" 2>&1 | head -15 || true
+    elif command -v wget >/dev/null 2>&1; then
+        echo "    测试 ${SERVER_URL}/api/test:"
+        wget -O - "${SERVER_URL}/api/test" 2>&1 | head -15 || true
+    fi
+    
     return 1
 }
 
@@ -206,10 +266,23 @@ echo "后端服务器进程 ID: $SERVER_PID"
 echo "日志文件: /tmp/backend_server.log"
 echo ""
 
+# 等待一小段时间，让服务器开始启动
+sleep 1
+
+# 检查进程是否还在运行
+if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+    echo "❌ 服务器进程立即退出了，查看日志:"
+    cat /tmp/backend_server.log
+    exit 1
+fi
+
 # 等待服务器启动
 if ! wait_for_server; then
-    echo "服务器启动失败，查看日志:"
-    tail -20 /tmp/backend_server.log
+    echo ""
+    echo "服务器启动失败，查看完整日志:"
+    echo "----------------------------------------"
+    cat /tmp/backend_server.log
+    echo "----------------------------------------"
     exit 1
 fi
 
@@ -220,13 +293,13 @@ echo "访问所有接口"
 echo "=========================================="
 echo ""
 
-# 1. 访问 /test 接口
-send_request "${SERVER_URL}/test" "接口 1: /test (GET, 无参数)"
+# 1. 访问 /api/test 接口
+send_request "${SERVER_URL}/api/test" "接口 1: /api/test (GET, 无参数)"
 
-# 2. 访问 /config/init 接口
-send_request "${SERVER_URL}/config/init" "接口 2: /config/init (GET, 无参数)"
+# 2. 访问 /api/config/init 接口
+send_request "${SERVER_URL}/api/config/init" "接口 2: /api/config/init (GET, 无参数)"
 
-# 3. 访问 /display/common 接口（需要日期参数）
+# 3. 访问 /api/display/common 接口（需要日期参数）
 # 从数据文件中获取日期范围
 EARLIEST_DATE=$(ls "$DATA_DIR"/transaction_*.csv 2>/dev/null | head -1 | xargs basename | sed 's/transaction_\(.*\)\.csv/\1/')
 LATEST_DATE=$(ls "$DATA_DIR"/transaction_*.csv 2>/dev/null | tail -1 | xargs basename | sed 's/transaction_\(.*\)\.csv/\1/')
@@ -239,17 +312,17 @@ fi
 
 echo ""
 echo "=========================================="
-echo "接口 3: /display/common (GET, 需要 start_date 和 end_date 参数)"
+echo "接口 3: /api/display/common (GET, 需要 start_date 和 end_date 参数)"
 echo "=========================================="
-echo "URL: ${SERVER_URL}/display/common?start_date=${EARLIEST_DATE}&end_date=${LATEST_DATE}"
+echo "URL: ${SERVER_URL}/api/display/common?start_date=${EARLIEST_DATE}&end_date=${LATEST_DATE}"
 echo ""
 
 if command -v curl >/dev/null 2>&1; then
     echo "响应:"
-    curl -s -w "\nHTTP状态码: %{http_code}\n" "${SERVER_URL}/display/common?start_date=${EARLIEST_DATE}&end_date=${LATEST_DATE}" | head -20
+    curl -s -w "\nHTTP状态码: %{http_code}\n" "${SERVER_URL}/api/display/common?start_date=${EARLIEST_DATE}&end_date=${LATEST_DATE}" | head -20
 elif command -v wget >/dev/null 2>&1; then
     echo "响应:"
-    wget -q -O - "${SERVER_URL}/display/common?start_date=${EARLIEST_DATE}&end_date=${LATEST_DATE}" | head -20
+    wget -q -O - "${SERVER_URL}/api/display/common?start_date=${EARLIEST_DATE}&end_date=${LATEST_DATE}" | head -20
     echo ""
     echo "HTTP状态码: 200 (wget 不显示状态码)"
 else
