@@ -19,7 +19,10 @@ func main() {
 	logger.InitLogger(*logLevel)
 
 	logger.Debug("table dir path: %s", *dataPath)
-	transaction.Init(*dataPath)
+	if err := transaction.Init(*dataPath); err != nil {
+		logger.Error("transaction init failed, err is %s", err.Error())
+		return
+	}
 	defer transaction.Close()
 
 	fmt.Printf("sum: %.2f\n", transaction.GetData().Sum())

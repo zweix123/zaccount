@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/zweix123/suger/common"
 	"github.com/zweix123/zaccount/backend/common/logger"
 	"github.com/zweix123/zaccount/backend/internal/domain/config"
-	"github.com/zweix123/zaccount/backend/internal/infrastructure/transaction"
 )
 
 // ConfigInitResponse HTTP响应数据结构
@@ -28,13 +28,10 @@ func HandleConfigInit(w http.ResponseWriter, r *http.Request) {
 	// 创建context
 	var ctx context.Context = r.Context()
 
-	// 获取所有交易数据
-	allTransactions := transaction.GetData()
-
 	// 构建domain层请求
-	req := &config.GetInitDataRequest{
-		Transactions: allTransactions,
-	}
+	req := &config.GetInitDataRequest{}
+
+	logger.Info("request_in||url=%s||req=%s", r.URL.String(), common.MustJsonMarshal(req))
 
 	// 调用domain层业务逻辑
 	resp, err := config.GetInitData(ctx, req)
@@ -44,6 +41,8 @@ func HandleConfigInit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Business logic error: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
+
+	logger.Info("response_out||url=%s||resp=%s", r.URL.String(), common.MustJsonMarshal(resp))
 
 	// 构建HTTP响应
 	response := ConfigInitResponse{

@@ -41,5 +41,7 @@ func Init() error {
 }
 
 func HandleTest(w http.ResponseWriter, r *http.Request) {
+	logger.Info("request_in||url=%s", r.URL.String())
 	w.Write([]byte("test success"))
+	logger.Info("response_out||url=%s", r.URL.String())
 }

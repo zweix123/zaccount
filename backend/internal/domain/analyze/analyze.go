@@ -10,9 +10,8 @@ import (
 
 // CalculateAnalyzeDataRequest 计算分析数据请求
 type CalculateAnalyzeDataRequest struct {
-	StartDate    time.Time                   // 开始日期
-	EndDate      time.Time                   // 结束日期
-	Transactions transaction.TransactionData // 交易数据
+	StartDate time.Time // 开始日期
+	EndDate   time.Time // 结束日期
 }
 
 // CalculateAnalyzeDataResponse 计算分析数据响应
@@ -37,8 +36,13 @@ func CalculateAnalyzeData(ctx context.Context, req *CalculateAnalyzeDataRequest)
 		return nil, errors.New("start_date must be before or equal to end_date")
 	}
 
+	transactions := transaction.GetData()
+	if len(transactions) == 0 {
+		return nil, errors.New("no transaction data available")
+	}
+
 	// 过滤时间范围内的交易
-	filteredTransactions := req.Transactions.FilterByDateRange(req.StartDate, req.EndDate)
+	filteredTransactions := transactions.FilterByDateRange(req.StartDate, req.EndDate)
 
 	// 计算收入、支出和结余
 	income := filteredTransactions.CalculateIncome()

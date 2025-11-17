@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/zweix123/suger/common"
 	"github.com/zweix123/zaccount/backend/common/logger"
 	"github.com/zweix123/zaccount/backend/internal/domain/analyze"
-	"github.com/zweix123/zaccount/backend/internal/infrastructure/transaction"
 )
 
 // AnalyzeResponse HTTP响应数据结构
@@ -53,15 +53,13 @@ func HandleAnalyze(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 获取所有交易数据
-	allTransactions := transaction.GetData()
-
 	// 构建domain层请求
 	req := &analyze.CalculateAnalyzeDataRequest{
-		StartDate:    startDate,
-		EndDate:      endDate,
-		Transactions: allTransactions,
+		StartDate: startDate,
+		EndDate:   endDate,
 	}
+
+	logger.Info("request_in||url=%s||req=%s", r.URL.String(), common.MustJsonMarshal(req))
 
 	// 调用domain层业务逻辑
 	resp, err := analyze.CalculateAnalyzeData(ctx, req)
@@ -71,6 +69,8 @@ func HandleAnalyze(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Business logic error: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
+
+	logger.Info("response_out||url=%s||resp=%s", r.URL.String(), common.MustJsonMarshal(resp))
 
 	// 构建HTTP响应
 	response := AnalyzeResponse{
