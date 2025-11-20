@@ -21,6 +21,12 @@
   gap: 1.5rem;
 }
 
+.display-charts {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
 @media (max-width: 768px) {
   .display-controls {
     grid-template-columns: 1fr;

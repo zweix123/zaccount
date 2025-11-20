@@ -14,11 +14,14 @@ import (
 
 // DisplayCommonResponse HTTP响应数据结构
 type DisplayCommonResponse struct {
-	Income    float64 `json:"income"`     // 收入
-	Expense   float64 `json:"expense"`    // 支出
-	Balance   float64 `json:"balance"`    // 当前结余
-	StartDate string  `json:"start_date"` // 开始日期
-	EndDate   string  `json:"end_date"`   // 结束日期
+	Income            float64                    `json:"income"`              // 收入
+	Expense           float64                    `json:"expense"`             // 支出
+	Balance           float64                    `json:"balance"`             // 当前结余
+	StartDate         string                     `json:"start_date"`          // 开始日期
+	EndDate           string                     `json:"end_date"`            // 结束日期
+	ExpenseEveryYear  []display.ExpenseDataPoint `json:"expense_every_year"`  // 每年支出
+	ExpenseEveryMonth []display.ExpenseDataPoint `json:"expense_every_month"` // 每月支出
+	ExpenseEveryDay   []display.ExpenseDataPoint `json:"expense_every_day"`   // 每日支出
 }
 
 func HandleDisplayCommonData(w http.ResponseWriter, r *http.Request) {
@@ -74,11 +77,14 @@ func HandleDisplayCommonData(w http.ResponseWriter, r *http.Request) {
 
 	// 构建HTTP响应
 	response := DisplayCommonResponse{
-		Income:    resp.Income,
-		Expense:   resp.Expense,
-		Balance:   resp.Balance,
-		StartDate: startDateStr,
-		EndDate:   endDateStr,
+		Income:            resp.Income,
+		Expense:           resp.Expense,
+		Balance:           resp.Balance,
+		StartDate:         startDateStr,
+		EndDate:           endDateStr,
+		ExpenseEveryYear:  resp.ExpenseEveryYear,
+		ExpenseEveryMonth: resp.ExpenseEveryMonth,
+		ExpenseEveryDay:   resp.ExpenseEveryDay,
 	}
 
 	// 设置响应头为JSON格式

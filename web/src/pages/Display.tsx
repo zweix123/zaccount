@@ -3,7 +3,13 @@ import DateRangePicker from '../components/DateRangePicker'
 import FilterForm from '../components/FilterForm'
 import ConfirmButton from '../components/ConfirmButton'
 import StatCard from '../components/StatCard'
+import ExpenseLineChart from '../components/ExpenseLineChart'
 import './Display.css'
+
+interface ExpenseDataPoint {
+  label: string
+  value: number
+}
 
 interface DisplayData {
   income: number
@@ -11,12 +17,16 @@ interface DisplayData {
   balance: number
   start_date: string
   end_date: string
+  expense_every_year: ExpenseDataPoint[]
+  expense_every_month: ExpenseDataPoint[]
+  expense_every_day: ExpenseDataPoint[]
 }
 
 interface ConfigInitData {
   earliest_date: string
   latest_date: string
 }
+
 
 function Display() {
   const [startDate, setStartDate] = useState('')
@@ -95,11 +105,42 @@ function Display() {
       </div>
 
       {data && (
-        <div className="display-cards">
-          <StatCard title="增加" value={data.income} type="income" />
-          <StatCard title="减少" value={data.expense} type="expense" />
-          <StatCard title="结余" value={data.balance} type="balance" />
-        </div>
+        <>
+          <div className="display-cards">
+            <StatCard title="增加" value={data.income} type="income" />
+            <StatCard title="减少" value={data.expense} type="expense" />
+            <StatCard title="结余" value={data.balance} type="balance" />
+          </div>
+
+          <div className="display-charts">
+            {data.expense_every_year && data.expense_every_year.length > 0 && (
+              <ExpenseLineChart
+                title="每年支出"
+                data={data.expense_every_year.map(item => item.value)}
+                labels={data.expense_every_year.map(item => item.label)}
+                dataKey="expense"
+              />
+            )}
+            {data.expense_every_month && data.expense_every_month.length > 0 && (
+              <ExpenseLineChart
+                title="每月支出"
+                data={data.expense_every_month.map(item => item.value)}
+                labels={data.expense_every_month.map(item => item.label)}
+                dataKey="expense"
+              />
+            )}
+            {data.expense_every_day && data.expense_every_day.length > 0 && (
+              <ExpenseLineChart
+                title="每日支出"
+                data={data.expense_every_day.map(item => item.value)}
+                labels={data.expense_every_day.map(item => item.label)}
+                dataKey="expense"
+                angle={data.expense_every_day.length > 30 ? -45 : 0}
+                interval={data.expense_every_day.length > 30 ? 'preserveStartEnd' : 0}
+              />
+            )}
+          </div>
+        </>
       )}
     </div>
   )
