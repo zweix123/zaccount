@@ -5,8 +5,7 @@ import shutil
 import commentjson  # type: ignore
 
 DATA_DIR = "data"
-SCRIPT_DIR_PATH = os.path.dirname(os.path.abspath(__file__))
-PROJECT_DIR_PATH = os.path.dirname(SCRIPT_DIR_PATH)
+PROJECT_DIR_PATH = os.path.dirname(os.path.abspath(__file__))
 
 
 def _build_ctg_file_path() -> str:

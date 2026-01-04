@@ -1,13 +1,60 @@
-from dryads import Dryads  # type: ignore
+from dryads import Dryads, argv  # type: ignore
 
-CMDS = {
-    "cli": "cd backend/ && go run cmd/cli/main.go -log-level=debug",
-    "dev": "./scripts/dev.sh",
-    "prod": "./scripts/prod.sh",
-    "test": {
-        "ut": "cd backend/test/scripts && bash run_unit_test.sh",
-        "ig": "cd backend/test/scripts && bash run_integration_test.sh",
-    },
+from entry import EntryList  # type: ignore
+from utils import get_data_file_path  # type: ignore
+
+
+class Operation:
+    def __init__(self, method: str) -> None:
+        assert method in ["w", "r"], f"method {method}"
+        self.method = method
+        self.filepath = get_data_file_path()
+        self.data: EntryList = EntryList([])
+
+    def __enter__(self) -> "Operation":
+        self.data = EntryList.from_csv_file(self.filepath)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        if self.method == "w":
+            self.data.to_csv_file(self.filepath)
+
+
+def sum():
+    """计算资产总额"""
+    with Operation("r") as op:
+        print(f"资产总额: {op.data.sum():,.2f}元")
+
+
+def tags():
+    """查看所有标签"""
+    with Operation("r") as op:
+        tags = set()
+        for entry in op.data:
+            tags.update(entry.tags)
+        print(tags)
+
+
+def group_by_tag():
+    """搜索标签"""
+    if len(argv) != 1:
+        print("Need tag")
+        return
+    tag = argv[0]
+    print(f"tag: {tag}")
+    result = []
+    with Operation("r") as op:
+        for entry in op.data:
+            if tag in entry.tags:
+                result.append(entry)
+    for line in result:
+        print(line)
+
+
+cmds = {
+    "sum": sum,
+    "tags": tags,
+    "group-by-tag": group_by_tag,
 }
 
-Dryads(CMDS)
+Dryads(cmds)  # type: ignore

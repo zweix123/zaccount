@@ -2,6 +2,7 @@ import csv
 from datetime import datetime
 
 import openpyxl
+
 from utils import check_categorys, get_data_file_path, load_ctg
 
 ENTRY_KEYS = ["date", "type", "amount", "categorys", "tags", "desc"]
