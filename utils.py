@@ -12,9 +12,15 @@ def _build_ctg_file_path() -> str:
     return os.path.join(PROJECT_DIR_PATH, "config", "ctg.jsonc")
 
 
+ctg_cache: dict[str, dict] = {}
+
+
 def load_ctg() -> dict:
-    with open(_build_ctg_file_path(), "r", encoding="utf-8") as f:
-        return commentjson.load(f)
+    global ctg_cache
+    if len(ctg_cache) == 0:
+        with open(_build_ctg_file_path(), "r", encoding="utf-8") as f:
+            ctg_cache = commentjson.load(f)
+    return ctg_cache
 
 
 def _build_data_file_path_from_date(date: datetime.datetime) -> str:
