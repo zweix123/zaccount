@@ -1,5 +1,6 @@
 import csv
 from datetime import datetime
+from typing import Callable
 
 import openpyxl
 
@@ -200,6 +201,9 @@ class EntryList(list["Entry"]):
         if last[-1].date > next[0].date:
             raise Exception(f"date {next[0].date} is not greater than {last[-1].date}")
         return EntryList(last + next)
+
+    def filter(self, predicate: Callable[["Entry"], bool]) -> "EntryList":
+        return EntryList([entry for entry in self if predicate(entry)])
 
 
 if __name__ == "__main__":
