@@ -9,10 +9,10 @@ from utils import check_categorys, get_data_file_path, load_ctg
 ENTRY_KEYS = ["date", "type", "amount", "categorys", "tags", "desc"]
 
 SUM_FACTOR: dict[str, float] = {
-    "收入": 1,
-    "支出": -1,
-    "转入": 1,
-    "转出": -1,
+    "收入": 1,  # income
+    "支出": -1,  # expense
+    "转入": 1,  # transfer in
+    "转出": -1,  # transfer out
 }
 assert set(SUM_FACTOR.keys()) == set(
     load_ctg().keys()
