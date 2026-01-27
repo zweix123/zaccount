@@ -42,13 +42,9 @@ def group_by_tag():
         return
     tag = argv[0]
     print(f"tag: {tag}")
-    result = []
     with Operation("r") as op:
-        for entry in op.data:
-            if tag in entry.tags:
-                result.append(entry)
-    for line in result:
-        print(line)
+        op.data = op.data.filter(lambda x: tag in x.tags)
+        print(f"资产总额: {op.data.sum():,.2f}元")
 
 
 cmds = {
