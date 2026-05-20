@@ -46,7 +46,7 @@ def get_data_file_path() -> str:
             shutil.copy(file_path, today_file_path)
             return today_file_path
 
-    raise FileNotFoundError(f"数据文件不存在")
+    raise FileNotFoundError("数据文件不存在")
 
 
 def check_categorys(type: str, categorys: list[str]) -> bool:

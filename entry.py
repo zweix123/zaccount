@@ -6,7 +6,7 @@ import openpyxl
 
 from utils import check_categorys, get_data_file_path, load_ctg
 
-ENTRY_KEYS = ["date", "type", "amount", "categorys", "tags", "desc"]
+ENTRY_KEYS = ["date", "account", "type", "amount", "categorys", "tags", "desc"]
 
 SUM_FACTOR: dict[str, float] = {
     "收入": 1,  # income
@@ -23,6 +23,7 @@ class Entry:
     def __init__(
         self,
         date: datetime,
+        account: str,
         type: str,
         amount: float,
         categorys: list[str],
@@ -30,6 +31,7 @@ class Entry:
         desc: str,
     ) -> None:
         self.date = date
+        self.account = account
         self.type = type
         self.amount = amount
         self.categorys = categorys
@@ -53,6 +55,10 @@ class Entry:
                 raise Exception(
                     f"date {data['date']} is not in the format %Y-%m-%d: {e}"
                 )
+        # account
+        account_field = data["account"]
+        if not isinstance(account_field, str) or len(account_field) == 0:
+            raise Exception(f"account {account_field} is empty or not a string")
         # type
         type_field = data["type"]
         if len(type_field) == 0:
@@ -89,6 +95,7 @@ class Entry:
 
         return cls(
             date=date_field,
+            account=account_field,
             type=type_field,
             amount=amount_field,
             categorys=categorys_field,
@@ -99,6 +106,7 @@ class Entry:
     def to_dict(self) -> dict:
         transforms = {
             "date": lambda x: x.strftime("%Y-%m-%d"),
+            "account": lambda x: x,
             "type": lambda x: x,
             "amount": lambda x: str(x),
             "categorys": lambda x: ",".join(x),
@@ -140,7 +148,22 @@ class EntryList(list["Entry"]):
                 except Exception as e:
                     raise Exception(f"Index: {reader.line_num}, Row: {row}, Error: {e}")
 
-        return cls(entries)
+        result = cls(entries)
+        result._check_internal_transfer_balance()
+        return result
+
+    def _check_internal_transfer_balance(self) -> None:
+        transfer_in = sum(
+            e.amount for e in self if e.type == "转入" and e.categorys[0] == "内转"
+        )
+        transfer_out = sum(
+            e.amount for e in self if e.type == "转出" and e.categorys[0] == "内转"
+        )
+        if abs(transfer_in - transfer_out) > 1e-6:
+            raise Exception(
+                f"内转收支不平衡: 转入={transfer_in:.2f}, 转出={transfer_out:.2f}, "
+                f"差额={transfer_in - transfer_out:.2f}"
+            )
 
     @classmethod
     def from_xlsx_file(cls, file_path: str) -> "EntryList":
@@ -171,7 +194,9 @@ class EntryList(list["Entry"]):
             except Exception as e:
                 raise Exception(f"Index: {row_index}, Row: {row_dict}, Error: {e}")
 
-        return cls(entries)
+        result = cls(entries)
+        result._check_internal_transfer_balance()
+        return result
 
     def to_csv_file(self, file_path: str) -> None:
         with open(file_path, "w") as f:
@@ -191,6 +216,14 @@ class EntryList(list["Entry"]):
         for entry in self:
             total += SUM_FACTOR[entry.type] * entry.amount
         return total
+
+    def sum_by_account(self) -> dict[str, float]:
+        result: dict[str, float] = {}
+        for entry in self:
+            if entry.account not in result:
+                result[entry.account] = 0
+            result[entry.account] += SUM_FACTOR[entry.type] * entry.amount
+        return result
 
     @staticmethod
     def concat(last: "EntryList", next: "EntryList") -> "EntryList":

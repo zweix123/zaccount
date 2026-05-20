@@ -23,7 +23,10 @@ class Operation:
 def sum():
     """计算资产总额"""
     with Operation("r") as op:
-        print(f"资产总额: {op.data.sum():,.2f}元")
+        by_account = op.data.sum_by_account()
+        for account, total in by_account.items():
+            print(f"[{account}] 资产总额: {total:,.2f}元")
+        print(f"[汇总] 资产总额: {op.data.sum():,.2f}元")
 
 
 def tags():
