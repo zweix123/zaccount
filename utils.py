@@ -34,20 +34,30 @@ def _build_data_file_path_from_date(date: datetime.datetime) -> str:
     )
 
 
-def get_data_file_path() -> str:
-    today = datetime.datetime.now()
-    today_file_path = _build_data_file_path_from_date(today)
-    if os.path.exists(today_file_path):
-        return today_file_path
+def _build_working_file_path() -> str:
+    return os.path.join(PROJECT_DIR_PATH, DATA_DIR, "transaction.csv")
 
-    # 假如没有, 则向之前的日期寻找, 直到进入2024年
+
+def get_data_file_path() -> str:
+    working_path = _build_working_file_path()
+    today = datetime.datetime.now()
+    today_backup_path = _build_data_file_path_from_date(today)
+
+    if os.path.exists(working_path):
+        if not os.path.exists(today_backup_path):
+            shutil.copy(working_path, today_backup_path)
+        return working_path
+
+    # 工作文件不存在, 则向之前的日期寻找, 直到进入2024年
     date = today
     while date.year > 2024:
         date = date - datetime.timedelta(days=1)
         file_path = _build_data_file_path_from_date(date)
         if os.path.exists(file_path):
-            shutil.copy(file_path, today_file_path)
-            return today_file_path
+            shutil.copy(file_path, working_path)
+            if not os.path.exists(today_backup_path):
+                shutil.copy(file_path, today_backup_path)
+            return working_path
 
     raise FileNotFoundError("数据文件不存在")
 
