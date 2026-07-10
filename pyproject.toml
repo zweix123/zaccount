@@ -1,28 +1,29 @@
-[tool.poetry]
+[project]
 name = "zaccount"
 version = "0.1.0"
 description = ""
-authors = ["zweix123 <11680125+zweix123@user.noreply.gitee.com>"]
+authors = [{ name = "zweix123", email = "1****************@user.noreply.gitee.com" }]
 readme = "README.md"
-package-mode = false
+requires-python = ">=3.13"
+dependencies = [
+    "dryads>=2.0.0",
+    "openpyxl>=3.1.5",
+    "commentjson>=0.9.0",
+    "ipykernel>=7.1.0",
+    "numpy>=2.4.0",
+    "pandas>=2.3.3",
+    "matplotlib>=3.10.8",
+    "plotly>=6.5.1",
+    "anywidget>=0.9.21",
+    "nbformat>=5.10.4",
+]
 
-[tool.poetry.dependencies]
-python = "^3.13"
-dryads = "^2.0.0"
-openpyxl = "^3.1.5"
-commentjson = "^0.9.0"
-ipykernel = "^7.1.0"
-numpy = "^2.4.0"
-pandas = "^2.3.3"
-matplotlib = "^3.10.8"
-plotly = "^6.5.1"
-anywidget = "^0.9.21"
+[dependency-groups]
+dev = [
+    "nbstripout>=0.9.1",
+    "rich>=14.0.0",
+    "types-openpyxl>=3.1.5.20250919",
+]
 
-
-[tool.poetry.group.dev.dependencies]
-rich = "^14.0.0"
-types-openpyxl = "^3.1.5.20250919"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.uv]
+package = false
