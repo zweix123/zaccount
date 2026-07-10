@@ -3,8 +3,11 @@ import os
 import shutil
 
 import commentjson  # type: ignore
+from dotenv import load_dotenv
 
-DATA_DIR = "data"
+load_dotenv()
+
+DATA_DIR = os.environ.get("DATA_DIR", "data")
 PROJECT_DIR_PATH = os.path.dirname(os.path.abspath(__file__))
 
 

@@ -13,5 +13,6 @@
 **/__pycache__
 
 # Project
+.env
 data
 output
