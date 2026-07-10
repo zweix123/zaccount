@@ -6,7 +6,10 @@
 
 ```bash
 # 安装依赖
-poetry install
+uv sync
+
+# 配置数据目录（可选，默认 ./data）
+cp .env.example .env
 
 # 查看资产总额（按账户分别汇总）
 python dryadsfile sum
@@ -26,9 +29,10 @@ zaccount/
 ├── utils.py         # 工具函数（数据文件路径、类别校验等）
 ├── dryadsfile       # CLI 命令入口（基于 dryads）
 ├── report.ipynb     # 可视化报表（Jupyter Notebook + Plotly）
+├── .env.example     # 环境变量模板
 ├── config/
 │   └── ctg.jsonc    # 类型与类别的树形枚举配置
-├── data/            # 交易数据（CSV 文件，按日期快照）
+├── data/            # 交易数据（CSV 文件，按日期快照，路径可通过 .env 配置）
 └── output/          # 报表输出（HTML 图表）
 ```
 
@@ -36,7 +40,7 @@ zaccount/
 
 ### transaction
 
-交易表，以 CSV 文件存储在 `data/` 目录下，文件名格式为 `transaction_YYYY-MM-DD.csv`。
+交易表，以 CSV 文件存储在数据目录下（默认 `data/`，可通过 `.env` 的 `DATA_DIR` 配置），文件名格式为 `transaction_YYYY-MM-DD.csv`。
 
 | field     | type    | description                                    |
 | --------- | ------- | ---------------------------------------------- |
