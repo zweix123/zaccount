@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 import csv
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from zaccount.domain import EntryDraft, EntryType, TransferDraft
 from zaccount.ledger import CSV_FIELDS, LedgerError, LedgerStore
 
 
 CATEGORY_TREE = {
+    "初始": {},
     "收入": {"工资": {}},
     "支出": {"餐饮": {"午饭": {}}},
     "转入": {"内转": {}},
@@ -70,6 +73,46 @@ def test_add_entry_sorts_and_creates_backup(store: LedgerStore) -> None:
     assert len(entries) == 3
     assert len(backups) == 1
     assert len(LedgerStore(store.data_dir, CATEGORY_TREE).load()) == 3
+
+
+def test_initial_entry_has_positive_amount_and_no_category(
+    store: LedgerStore,
+) -> None:
+    added = store.add_entry(
+        EntryDraft(
+            date="2025-12-31",
+            account="银行卡",
+            type=EntryType.INITIAL,
+            amount="500",
+            categories=[],
+        )
+    )
+
+    reloaded = store.load()[0]
+
+    assert added.signed_amount() == Decimal("500")
+    assert reloaded == added
+    assert reloaded.categories == ()
+
+
+def test_initial_entry_rejects_non_positive_amount_or_category() -> None:
+    with pytest.raises(ValidationError):
+        EntryDraft(
+            date="2026-01-01",
+            account="银行卡",
+            type=EntryType.INITIAL,
+            amount="0",
+            categories=[],
+        )
+
+    with pytest.raises(ValidationError, match="初始账目不能填写类别"):
+        EntryDraft(
+            date="2026-01-01",
+            account="银行卡",
+            type=EntryType.INITIAL,
+            amount="500",
+            categories=["其他"],
+        )
 
 
 def test_transfer_is_committed_as_balanced_pair(store: LedgerStore) -> None:

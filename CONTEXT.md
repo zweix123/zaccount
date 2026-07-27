@@ -13,7 +13,7 @@ A named place whose balance is affected by ledger entries, such as a bank accoun
 _Avoid_: Source
 
 **Type**:
-The fundamental direction and meaning of a ledger entry: income, expense, transfer in, or transfer out.
+The fundamental direction and meaning of a ledger entry: initial balance, income, expense, transfer in, or transfer out. An initial balance is a positive amount recorded when an account is created; it has no category, increases that account's balance and net change, and is not income.
 _Avoid_: Category, kind
 
 **Category path**:

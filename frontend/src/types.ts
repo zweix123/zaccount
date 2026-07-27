@@ -1,4 +1,4 @@
-export type EntryType = '收入' | '支出' | '转入' | '转出'
+export type EntryType = '初始' | '收入' | '支出' | '转入' | '转出'
 
 export interface LedgerEntry {
   rowNumber: number

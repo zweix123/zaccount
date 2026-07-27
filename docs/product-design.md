@@ -6,7 +6,7 @@ Zaccount becomes one local application that replaces both the command-oriented `
 
 The first usable release must let its owner:
 
-1. record an income or expense without editing CSV;
+1. record an initial balance, income, or expense without editing CSV;
 2. record a transfer as one action that creates a balanced pair;
 3. browse and filter the complete ledger;
 4. understand totals, monthly expense movement, category distribution, tag distribution, and account balances;
@@ -55,7 +55,7 @@ The owner filters by date range, account, type, category prefix, tag, or descrip
 
 The same filters drive:
 
-- income, expense, and net-change totals;
+- income, expense, and net-change totals, with initial balances included only in net change and account balances;
 - account balances;
 - monthly expense movement;
 - expense totals by first-level category;

@@ -69,6 +69,7 @@ function clear(): void {
         <span>类型</span>
         <select v-model="draft.type">
           <option value="">全部类型</option>
+          <option value="初始">初始</option>
           <option value="收入">收入</option>
           <option value="支出">支出</option>
           <option value="转入">转入</option>

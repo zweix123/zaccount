@@ -1,6 +1,7 @@
 import type { EntryType, LedgerEntry, LedgerFilters } from './types'
 
 export const entryTypeTone: Record<EntryType, string> = {
+  初始: 'initial',
   收入: 'positive',
   支出: 'negative',
   转入: 'transfer-in',

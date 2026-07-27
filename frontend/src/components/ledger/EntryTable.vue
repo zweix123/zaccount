@@ -133,6 +133,7 @@ const hasMore = computed(() => props.entries.length > visibleCount.value)
 }
 
 .type-dot.positive,
+.type-dot.initial,
 .type-dot.transfer-in {
   background: var(--income);
 }
@@ -161,6 +162,7 @@ const hasMore = computed(() => props.entries.length > visibleCount.value)
 }
 
 .entry-amount.positive,
+.entry-amount.initial,
 .entry-amount.transfer-in {
   color: var(--income);
 }

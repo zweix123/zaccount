@@ -9,6 +9,7 @@ const meta: LedgerMeta = {
   tags: ['工作日'],
   dataFile: '/tmp/transaction.csv',
   categoryTree: {
+    初始: {},
     收入: { 工资: {} },
     支出: { 餐饮: { 午饭: {} } },
     转入: { 内转: {} },
@@ -46,5 +47,22 @@ describe('EntryForm', () => {
     expect(
       wrapper.get('[data-testid="save-entry"]').attributes('disabled'),
     ).toBeDefined()
+  })
+
+  it('emits an initial balance without requiring a category', async () => {
+    const wrapper = mount(EntryForm, {
+      props: { meta, saving: false },
+    })
+
+    await wrapper.get('.type-初始').trigger('click')
+    await wrapper.get('[data-testid="amount-input"]').setValue('500')
+    await wrapper.get('form').trigger('submit')
+
+    expect(wrapper.find('[data-testid="category-root"]').exists()).toBe(false)
+    expect(wrapper.emitted('save')?.[0]?.[0]).toMatchObject({
+      type: '初始',
+      amount: 500,
+      categories: [],
+    })
   })
 })

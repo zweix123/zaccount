@@ -5,10 +5,11 @@ from decimal import Decimal
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class EntryType(StrEnum):
+    INITIAL = "初始"
     INCOME = "收入"
     EXPENSE = "支出"
     TRANSFER_IN = "转入"
@@ -16,6 +17,7 @@ class EntryType(StrEnum):
 
 
 SUM_FACTOR: dict[EntryType, Decimal] = {
+    EntryType.INITIAL: Decimal("1"),
     EntryType.INCOME: Decimal("1"),
     EntryType.EXPENSE: Decimal("-1"),
     EntryType.TRANSFER_IN: Decimal("1"),
@@ -30,7 +32,7 @@ class LedgerEntry(BaseModel):
     account: str
     type: EntryType
     amount: Decimal = Field(gt=0)
-    categories: tuple[str, ...] = Field(min_length=1)
+    categories: tuple[str, ...] = ()
     tags: tuple[str, ...] = ()
     description: str = ""
 
@@ -55,6 +57,15 @@ class LedgerEntry(BaseModel):
     @classmethod
     def normalize_description(cls, value: Any) -> str:
         return "" if value is None else str(value).strip()
+
+    @model_validator(mode="after")
+    def validate_categories_for_type(self) -> "LedgerEntry":
+        if self.type is EntryType.INITIAL:
+            if self.categories:
+                raise ValueError("初始账目不能填写类别")
+        elif not self.categories:
+            raise ValueError("类别不能为空")
+        return self
 
     @classmethod
     def from_csv_row(cls, row: dict[str, str | None]) -> "LedgerEntry":
@@ -102,7 +113,7 @@ class EntryDraft(BaseModel):
     account: str
     type: EntryType
     amount: Decimal = Field(gt=0)
-    categories: tuple[str, ...] = Field(min_length=1)
+    categories: tuple[str, ...] = ()
     tags: tuple[str, ...] = ()
     description: str = ""
 
@@ -127,6 +138,15 @@ class EntryDraft(BaseModel):
     @classmethod
     def normalize_description(cls, value: Any) -> str:
         return "" if value is None else str(value).strip()
+
+    @model_validator(mode="after")
+    def validate_categories_for_type(self) -> "EntryDraft":
+        if self.type is EntryType.INITIAL:
+            if self.categories:
+                raise ValueError("初始账目不能填写类别")
+        elif not self.categories:
+            raise ValueError("类别不能为空")
+        return self
 
     def to_entry(self) -> LedgerEntry:
         return LedgerEntry(**self.model_dump())

@@ -9,6 +9,7 @@ const meta: LedgerMeta = {
   tags: ['旅行'],
   dataFile: '/tmp/transaction.csv',
   categoryTree: {
+    初始: {},
     收入: { 工资: {} },
     支出: { 餐饮: {} },
     转入: { 内转: {} },

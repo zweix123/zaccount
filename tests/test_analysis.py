@@ -19,6 +19,7 @@ def entry(**overrides: object) -> LedgerEntry:
 def test_analysis_uses_signed_totals_and_ignores_empty_tags() -> None:
     result = analyse(
         [
+            entry(type="初始", amount="500", categories=[]),
             entry(type="收入", amount="100", categories=["工资"]),
             entry(amount="25", tags=["聚餐"]),
             entry(
@@ -39,10 +40,14 @@ def test_analysis_uses_signed_totals_and_ignores_empty_tags() -> None:
     assert result["summary"] == {
         "income": 100.0,
         "expense": 25.0,
-        "netChange": 75.0,
+        "netChange": 575.0,
     }
+    assert result["accounts"] == [
+        {"label": "银行卡", "amount": 545.0},
+        {"label": "微信", "amount": 30.0},
+    ]
     assert result["tagExpense"] == [{"label": "聚餐", "amount": 25.0}]
-    assert result["count"] == 4
+    assert result["count"] == 5
 
 
 def test_analysis_filter_is_shared_by_every_aggregation() -> None:

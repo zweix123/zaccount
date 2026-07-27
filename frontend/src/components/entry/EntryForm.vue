@@ -30,7 +30,7 @@ const draft = reactive({
   description: '',
 })
 
-const types: EntryType[] = ['支出', '收入', '转出', '转入']
+const types: EntryType[] = ['支出', '收入', '初始', '转出', '转入']
 const rootCategories = computed(() =>
   Object.keys(props.meta.categoryTree[draft.type] ?? {}),
 )
@@ -42,7 +42,7 @@ const canSave = computed(
   () =>
     Number(draft.amount) > 0 &&
     Boolean(draft.account.trim()) &&
-    Boolean(draft.category0),
+    (draft.type === '初始' || Boolean(draft.category0)),
 )
 
 function selectType(type: EntryType): void {
@@ -57,8 +57,10 @@ function handleRootCategory(): void {
 
 function submit(): void {
   if (!canSave.value) return
-  const categories = [draft.category0]
-  if (draft.category1) categories.push(draft.category1)
+  const categories =
+    draft.type === '初始'
+      ? []
+      : [draft.category0, draft.category1].filter(Boolean)
   emit('save', {
     date: draft.date,
     account: draft.account,
@@ -134,7 +136,7 @@ defineExpose({ resetAfterSave })
         </datalist>
       </label>
 
-      <label class="field">
+      <label v-if="draft.type !== '初始'" class="field">
         <span class="field-label">一级类别</span>
         <select
           v-model="draft.category0"
@@ -205,7 +207,7 @@ defineExpose({ resetAfterSave })
 
 .type-switch {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 0.35rem;
   padding: 0.3rem;
   border: 1px solid var(--rule);
@@ -234,6 +236,10 @@ defineExpose({ resetAfterSave })
 
 .type-收入.active {
   background: var(--income);
+}
+
+.type-初始.active {
+  background: var(--blue);
 }
 
 .type-转出.active,
