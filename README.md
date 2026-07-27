@@ -67,17 +67,11 @@ uv run python -m zaccount \
 报告包含账目明细，因此应像原始账本一样作为私人数据保管。不要提交
 `report.json`、`report.html`、真实账本或截图。
 
-## 单独校验
-
-```bash
-uv run ./check_ledger.py
-```
-
 ## 验证
 
 ```bash
 uv run pytest
-uv run python -m compileall zaccount account_balances.py check_ledger.py entry.py utils.py
+uv run python -m compileall zaccount entry.py utils.py
 ```
 
 测试只使用临时目录，不会读写 `.env` 指向的个人账本。

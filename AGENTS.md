@@ -43,11 +43,9 @@ reports, generated output, or caches.
 - `uv run python -m zaccount` generates `output/report.json` and
   `output/report.html`.
 - `uv run python -m zaccount --open` generates and opens the HTML report.
-- `uv run ./check_ledger.py` validates the configured ledger without generating a
-  report.
 - `uv run pytest` runs the complete behavior suite.
-- `uv run python -m compileall zaccount account_balances.py check_ledger.py
-  entry.py utils.py` performs a quick syntax check.
+- `uv run python -m compileall zaccount entry.py utils.py` performs a quick syntax
+  check.
 
 Commit `uv.lock` when dependencies change.
 
@@ -116,7 +114,7 @@ Run:
 
 ```bash
 uv run pytest
-uv run python -m compileall zaccount account_balances.py check_ledger.py entry.py utils.py
+uv run python -m compileall zaccount entry.py utils.py
 ```
 
 Use temporary directories for storage and report tests. Never read or write the
