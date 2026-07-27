@@ -1,160 +1,133 @@
-# Zaccount local ledger
+# Zaccount static analysis report
 
 ## Outcome
 
-Zaccount becomes one local application that replaces both the command-oriented `dryadsfile` entry point and the exploratory `report.ipynb`.
+Zaccount turns a validated local CSV ledger into a disposable interactive report.
+The owner edits the working data file directly, runs one fast command, and opens a
+new snapshot without starting or maintaining an application service.
 
-The first usable release must let its owner:
+The report must let its owner:
 
-1. record an initial balance, income, or expense without editing CSV;
-2. record a transfer as one action that creates a balanced pair;
-3. browse and filter the complete ledger;
-4. understand totals, monthly expense movement, category distribution, tag distribution, and account balances;
-5. keep `transaction.csv` portable and recoverable.
+1. understand income, expense, net change, account balances, monthly expense,
+   category distribution, and tag distribution;
+2. combine date, account, type, category-path, tag, and description filters;
+3. trace every result back to the matching ledger entries;
+4. regenerate the complete result from `transaction.csv` in one command;
+5. keep all source data and generated artifacts local.
 
-The application contains no cloud sync, authentication, multi-user concepts, budget planning, entry editing, or deletion in the first release.
+There is no entry form, write interface, HTTP server, cloud sync, authentication,
+telemetry, multi-user model, or database.
 
 ## Product principles
 
-- **Local is a data guarantee.** The server binds to `127.0.0.1`; the interface loads no remote assets and the ledger never leaves the machine.
-- **One action, one intent.** Ordinary entries and transfers have separate forms because a transfer is not merely an entry with a different label.
-- **Classification follows the model.** Type controls the available category tree; tags remain independent and optional.
-- **The CSV is an export and a source of truth.** The interface never exposes CSV mechanics during normal use.
-- **Analysis must lead back to evidence.** Filters apply consistently to summaries, charts, and the visible entry list.
-- **Failed writes leave the ledger untouched.** The complete candidate ledger is validated before an atomic replacement.
+- **Generation is the refresh action.** A report is a snapshot, not a long-running
+  application that synchronizes itself.
+- **Local is a data guarantee.** The report contains no remote assets or network
+  requests.
+- **Analysis leads back to evidence.** Every filter updates summaries, charts, and
+  the visible entry list together.
+- **One calculation model.** Initial rendering and browser interaction follow the
+  same type signs and category-prefix rules.
+- **The source is read-only.** Report generation validates but never modifies,
+  copies, or backs up the ledger.
+- **Generated output is private.** The report embeds the fields required for
+  interactive analysis and must be protected like the source CSV.
 
 ## Domain rules
 
 The canonical language is recorded in [`CONTEXT.md`](../CONTEXT.md).
 
-- An amount is positive and stored as decimal text.
-- Dates use `YYYY-MM-DD`.
-- Ledger entries are kept in ascending date order. Entries on the same date preserve insertion order.
-- A category path must be a valid prefix in the tree for its type.
-- Tags are trimmed, independent labels; an empty tag collection is valid.
-- Income and transfer-in add to an account balance.
-- Expense and transfer-out subtract from an account balance.
-- Every internal transfer is created as an equal transfer-out and transfer-in pair.
-- The legacy CSV header remains `date,account,type,amount,categorys,tags,desc`. The misspelt `categorys` name is an adapter concern and does not enter the domain language.
-
-## First-release journeys
-
-### Record an ordinary entry
-
-The amount field receives focus. The date defaults to today. The owner selects a type, account, category path, optional tags, and description, then chooses “保存账目”. The application validates the candidate ledger, makes a timestamped backup, replaces the working CSV, refreshes all views, and confirms the saved entry.
-
-### Record a transfer
-
-The owner switches to “账户转账”, selects different source and destination accounts, enters a positive amount, date, tags, and description, then chooses “保存转账”. One operation creates the matched `转出 / 内转` and `转入 / 内转` entries. No half-transfer can be written.
-
-### Find entries
-
-The owner filters by date range, account, type, category prefix, tag, or description text. The newest matching entries appear first. Clearing filters returns to the full ledger.
-
-### Analyse spending
-
-The same filters drive:
-
-- income, expense, and net-change totals, with initial balances included only in net change and account balances;
-- account balances;
-- monthly expense movement;
-- expense totals by first-level category;
-- expense totals by tag.
-
-Selecting no tags does not create a fake “untagged” tag.
+- Amounts are positive decimal text.
+- Initial balance, income, and transfer-in add funds.
+- Expense and transfer-out subtract funds.
+- Initial balance has no category and is not counted as income.
+- Dates use `YYYY-MM-DD` and remain in ascending order.
+- A category path is a valid prefix of the fixed tree for its type.
+- Selecting a category in the report matches that path and every descendant.
+- Selecting multiple tags requires a ledger entry to contain every selected tag.
+- Internal transfer-in and transfer-out totals must balance.
+- The durable header remains `date,account,type,amount,categorys,tags,desc`.
 
 ## Architecture
 
 ```text
-Vue interface
-    │  JSON over same-origin HTTP
-    ▼
-Local application
-    ├── Ledger module
-    │     validate → sort → back up → atomic replace
-    ├── Analysis module
-    │     filter → aggregate → serialize
-    └── CSV adapter
-          transaction.csv + timestamped backups
+transaction.csv + category tree
+              │
+              ▼
+      Report generation module
+      ├── read and validate ledger
+      ├── calculate canonical totals
+      ├── create versioned report data
+      └── atomically write both artifacts
+              │
+              ├── report.json
+              └── report.html
+                    └── local browser filtering and rendering
 ```
 
-The **Ledger module** is the principal deep module. Its interface exposes loading the ledger, adding one ordinary entry, and adding one transfer. Callers do not manage CSV rows, ordering, full-ledger invariants, backups, temporary files, or replacement.
+The **Report generation module** is the principal deep module. Its interface accepts
+the ledger path, category tree, and output directory. Callers do not manage CSV
+rows, validation order, serialization, template escaping, fingerprints, or atomic
+output replacement.
 
-The **Analysis module** accepts ledger entries plus a filter and returns a single analysis result. Account, monthly, category, and tag aggregation are implementation details behind that interface.
+The **Ledger module** is a read-only adapter for the durable CSV seam. The
+**Analysis module** is pure in-process calculation. The HTML renderer is an
+offline adapter over the versioned report data; it does not become a second source
+of durable truth.
 
-The HTTP layer is an adapter. It translates JSON and errors but owns no ledger rules. Vue is also an adapter: it presents domain operations rather than reproducing their validation.
+## Report data contract
 
-## Interface map
+`report.json` has a top-level `schemaVersion`. Money is serialized as decimal
+strings. It contains:
 
-```text
-App
-├── AppNavigation
-├── EntryWorkspace
-│   ├── EntryModeSwitch
-│   ├── EntryForm
-│   └── TransferForm
-├── LedgerWorkspace
-│   ├── LedgerFilters
-│   └── EntryTable
-└── AnalysisWorkspace
-    ├── SummaryRail
-    ├── MonthlyTrend
-    ├── CategoryBars
-    ├── TagBars
-    └── AccountBalances
-```
+- generation time;
+- source file name, date range, entry count, and SHA-256 fingerprint;
+- the category tree;
+- canonical full-ledger analysis;
+- normalized entries required for arbitrary local filtering.
 
-- `App` composes views and owns navigation only.
-- `useLedger` owns remote state, loading, saving, errors, and refresh actions.
-- Forms own drafts and emit validated user intent upward.
-- Filters are controlled state: values go down and changes come up.
-- Analysis components receive immutable result data and contain no fetching logic.
+The absolute source path is deliberately excluded. The HTML embeds the exact same
+JSON after escaping characters that could terminate its data script.
+
+## Interaction
+
+Filters apply immediately with no submit action:
+
+- start and end dates, plus year shortcuts;
+- one account and one type;
+- one category path at any depth;
+- any number of tags, with all-selected semantics;
+- description text.
+
+Changing a filter updates the funds scale, summary totals, account movements,
+monthly expense, category drill-down, tag distribution, and evidence table.
+When a start date is selected, account results are labelled as interval movement
+instead of current balance.
 
 ## Visual direction
 
-The interface resembles a precise personal ledger rather than a generic administration dashboard.
+The report resembles a precise personal ledger rather than an administration
+dashboard. It uses local system typefaces and these tokens:
 
-### Tokens
-
-- paper: `#F4F6FA`
+- paper: `#F2F5F9`
 - surface: `#FFFFFF`
 - ink: `#17233B`
-- muted ink: `#68738A`
 - ledger blue: `#3157D5`
-- expense coral: `#DE6255`
-- income teal: `#238674`
-- rule: `#DDE3EE`
+- expense coral: `#D9584D`
+- income teal: `#1D806E`
+- rule: `#D9E0EB`
 
-Chinese body text uses the local `PingFang SC` stack. Restrained headings use `Songti SC` to evoke a personal book without turning the interface into a newspaper. Amounts and compact labels use `SFMono-Regular` with tabular numerals.
-
-The signature element is a horizontal **funds scale**: a fine ruled line with income and expense marks that becomes the monthly trend in the analysis view. Motion is limited to one view-entry sequence and respects reduced-motion preferences.
-
-## Storage safety
-
-For every mutation:
-
-1. acquire the in-process ledger lock;
-2. read and validate the existing complete ledger;
-3. build and validate the complete candidate ledger;
-4. copy the current CSV to `backups/` with a timestamped name;
-5. write the candidate to a temporary file in the same directory;
-6. flush and atomically replace `transaction.csv`;
-7. return the committed result.
-
-Read operations never create backups. Tests use a temporary directory and never touch the configured personal ledger.
+Its signature is the **funds scale**: expense extends left from zero and income
+extends right, making the current filtered relationship visible before reading
+individual values. Motion is limited to value and bar transitions and respects
+reduced-motion preferences.
 
 ## Verification
 
-- Domain tests cover valid and invalid dates, amounts, category paths, and transfer pairs.
-- Storage tests assert sorting, backups, atomic observable results, and unchanged files after validation failure.
-- Analysis tests cover filters and signed totals.
-- Vue component tests exercise forms and filters through visible controls and emitted events.
-- One browser test covers loading the real application against a temporary ledger, adding an expense, and observing refreshed analysis.
-
-## Later work
-
-- Stable entry IDs followed by edit, delete, and undo.
-- Saved entry templates and keyboard-first quick entry.
-- Comparisons with previous month and previous year.
-- Import review for payment-platform exports.
-- Optional migration from CSV if write volume or cross-device use eventually makes a database worthwhile.
+- Domain and ledger tests cover decimal signs, initial balances, fields, ordering,
+  category paths, and transfer balance.
+- Analysis tests cover shared filters and category prefix semantics.
+- Reporting tests cover schema version, decimal serialization, source privacy,
+  template escaping, CLI output, and standalone artifacts.
+- Browser verification covers combined date, tag, and category interaction at
+  desktop and mobile widths using synthetic data.

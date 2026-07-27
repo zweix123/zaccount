@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by 0002
 ---
 
 # Use a local web application with CSV as the durable ledger

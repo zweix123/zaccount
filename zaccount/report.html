@@ -1,0 +1,1251 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zaccount 账本分析</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --paper: #f2f5f9;
+        --surface: #ffffff;
+        --ink: #17233b;
+        --muted: #68738a;
+        --blue: #3157d5;
+        --blue-soft: #e9edfb;
+        --expense: #d9584d;
+        --expense-soft: #fae9e7;
+        --income: #1d806e;
+        --income-soft: #e2f2ee;
+        --rule: #d9e0eb;
+        --shadow: 0 18px 50px rgb(33 48 78 / 8%);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
+          sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          linear-gradient(90deg, transparent 31px, rgb(49 87 213 / 7%) 32px, transparent 33px),
+          var(--paper);
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      button,
+      select {
+        cursor: pointer;
+      }
+
+      :focus-visible {
+        outline: 3px solid rgb(49 87 213 / 28%);
+        outline-offset: 2px;
+      }
+
+      .page {
+        width: min(1480px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 36px 0 72px;
+      }
+
+      .masthead {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 28px;
+        align-items: end;
+        padding: 0 0 28px;
+        border-bottom: 1px solid var(--rule);
+      }
+
+      .eyebrow,
+      .section-label,
+      th {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      h1 {
+        margin: 6px 0 0;
+        font-family: "Songti SC", "STSong", serif;
+        font-size: clamp(36px, 5vw, 68px);
+        font-weight: 700;
+        line-height: 0.98;
+        letter-spacing: -0.04em;
+      }
+
+      .source-note {
+        max-width: 420px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.7;
+        text-align: right;
+      }
+
+      .source-note strong {
+        color: var(--ink);
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-weight: 600;
+      }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: 286px minmax(0, 1fr);
+        gap: 24px;
+        margin-top: 24px;
+        align-items: start;
+      }
+
+      .filters {
+        position: sticky;
+        top: 18px;
+        padding: 22px;
+        border: 1px solid var(--rule);
+        background: rgb(255 255 255 / 88%);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(16px);
+      }
+
+      .filters-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid var(--rule);
+      }
+
+      .filters h2,
+      .panel h2 {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 700;
+      }
+
+      .text-button {
+        padding: 4px;
+        border: 0;
+        color: var(--blue);
+        background: transparent;
+        font-size: 13px;
+      }
+
+      .field {
+        display: grid;
+        gap: 7px;
+        margin-top: 17px;
+      }
+
+      .field label,
+      .field legend {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 650;
+      }
+
+      .field input,
+      .field select {
+        width: 100%;
+        min-height: 40px;
+        border: 1px solid var(--rule);
+        border-radius: 4px;
+        padding: 8px 10px;
+        color: var(--ink);
+        background: var(--surface);
+      }
+
+      .date-pair {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .date-pair input {
+        min-width: 0;
+      }
+
+      .quick-dates,
+      .tag-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .chip {
+        min-height: 30px;
+        border: 1px solid var(--rule);
+        border-radius: 999px;
+        padding: 5px 10px;
+        color: var(--muted);
+        background: var(--surface);
+        font-size: 12px;
+      }
+
+      .chip[aria-pressed="true"] {
+        border-color: var(--blue);
+        color: var(--blue);
+        background: var(--blue-soft);
+      }
+
+      .tag-help {
+        margin: 7px 0 0;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.5;
+      }
+
+      .results {
+        min-width: 0;
+      }
+
+      .ruler {
+        padding: 25px 28px 23px;
+        color: var(--surface);
+        background: var(--ink);
+        box-shadow: var(--shadow);
+      }
+
+      .ruler-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        align-items: baseline;
+      }
+
+      .ruler .section-label {
+        color: #aeb9cc;
+      }
+
+      .selection-summary {
+        color: #cdd5e3;
+        font-size: 12px;
+        text-align: right;
+      }
+
+      .funds-scale {
+        display: grid;
+        grid-template-columns: 1fr 1px 1fr;
+        align-items: center;
+        gap: 0;
+        height: 56px;
+        margin-top: 15px;
+      }
+
+      .scale-half {
+        display: flex;
+        align-items: center;
+        height: 100%;
+      }
+
+      .scale-half.expense {
+        justify-content: flex-end;
+      }
+
+      .scale-bar {
+        width: 0;
+        height: 8px;
+        transition: width 280ms ease;
+      }
+
+      .expense .scale-bar {
+        background: var(--expense);
+      }
+
+      .income .scale-bar {
+        background: var(--income);
+      }
+
+      .scale-zero {
+        width: 1px;
+        height: 36px;
+        background: #d7deeb;
+      }
+
+      .scale-values {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px;
+        margin-top: -3px;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 13px;
+      }
+
+      .scale-values span:nth-child(2) {
+        text-align: center;
+        color: #cdd5e3;
+      }
+
+      .scale-values span:last-child {
+        text-align: right;
+      }
+
+      .expense-text {
+        color: #ff988f;
+      }
+
+      .income-text {
+        color: #78d5c2;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        border: 1px solid var(--rule);
+        border-top: 0;
+        background: var(--surface);
+      }
+
+      .metric {
+        min-width: 0;
+        padding: 20px 22px;
+        border-right: 1px solid var(--rule);
+      }
+
+      .metric:last-child {
+        border-right: 0;
+      }
+
+      .metric-label {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .metric-value {
+        display: block;
+        margin-top: 8px;
+        overflow: hidden;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: clamp(19px, 2.2vw, 30px);
+        font-weight: 650;
+        letter-spacing: -0.045em;
+        text-overflow: ellipsis;
+      }
+
+      .metric.expense-metric .metric-value {
+        color: var(--expense);
+      }
+
+      .metric.income-metric .metric-value {
+        color: var(--income);
+      }
+
+      .panel-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 18px;
+      }
+
+      .panel {
+        min-width: 0;
+        padding: 22px;
+        border: 1px solid var(--rule);
+        background: var(--surface);
+        box-shadow: 0 12px 34px rgb(33 48 78 / 5%);
+      }
+
+      .panel-wide {
+        grid-column: 1 / -1;
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+
+      .panel-note {
+        color: var(--muted);
+        font-size: 11px;
+        text-align: right;
+      }
+
+      .bars {
+        display: grid;
+        gap: 13px;
+      }
+
+      .bar-row {
+        display: grid;
+        grid-template-columns: minmax(68px, 0.75fr) minmax(120px, 2fr) auto;
+        gap: 12px;
+        align-items: center;
+        min-width: 0;
+      }
+
+      .bar-label {
+        overflow: hidden;
+        font-size: 13px;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+
+      .bar-track {
+        height: 7px;
+        overflow: hidden;
+        background: #edf0f5;
+      }
+
+      .bar-fill {
+        width: 0;
+        height: 100%;
+        background: var(--blue);
+        transition: width 260ms ease;
+      }
+
+      .expense-bars .bar-fill {
+        background: var(--expense);
+      }
+
+      .bar-value {
+        font-family: "SFMono-Regular", Consolas, monospace;
+        color: var(--muted);
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .trend {
+        display: grid;
+        grid-template-columns: repeat(var(--month-count, 1), minmax(38px, 1fr));
+        gap: 8px;
+        align-items: end;
+        min-height: 190px;
+        padding-top: 12px;
+        overflow-x: auto;
+      }
+
+      .month {
+        display: grid;
+        grid-template-rows: 1fr auto auto;
+        gap: 7px;
+        align-items: end;
+        min-width: 38px;
+        height: 178px;
+      }
+
+      .month-bar-wrap {
+        display: flex;
+        align-items: end;
+        justify-content: center;
+        height: 100%;
+        border-bottom: 1px solid var(--rule);
+      }
+
+      .month-bar {
+        width: min(28px, 72%);
+        min-height: 2px;
+        background: var(--expense);
+        transition: height 260ms ease;
+      }
+
+      .month-value,
+      .month-label {
+        font-family: "SFMono-Regular", Consolas, monospace;
+        color: var(--muted);
+        font-size: 9px;
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      .month-label {
+        color: var(--ink);
+      }
+
+      .table-wrap {
+        overflow: auto;
+        border-top: 1px solid var(--rule);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+
+      th,
+      td {
+        padding: 11px 10px;
+        border-bottom: 1px solid #e8ecf2;
+        text-align: left;
+        vertical-align: top;
+        white-space: nowrap;
+      }
+
+      td.description {
+        min-width: 180px;
+        white-space: normal;
+      }
+
+      td.amount {
+        font-family: "SFMono-Regular", Consolas, monospace;
+        text-align: right;
+      }
+
+      .type-expense td.amount {
+        color: var(--expense);
+      }
+
+      .type-income td.amount {
+        color: var(--income);
+      }
+
+      .path {
+        color: var(--muted);
+      }
+
+      .empty {
+        padding: 34px 12px;
+        color: var(--muted);
+        text-align: center;
+        font-size: 13px;
+      }
+
+      .footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        margin-top: 24px;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.6;
+      }
+
+      @media (max-width: 980px) {
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+
+        .filters {
+          position: static;
+        }
+
+        .filters-body {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0 16px;
+        }
+
+        .field.tags-field {
+          grid-column: 1 / -1;
+        }
+      }
+
+      @media (max-width: 700px) {
+        body {
+          background: var(--paper);
+        }
+
+        .page {
+          width: min(100% - 24px, 1480px);
+          padding-top: 22px;
+        }
+
+        .masthead {
+          grid-template-columns: 1fr;
+        }
+
+        .source-note {
+          text-align: left;
+        }
+
+        .filters-body,
+        .panel-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .summary-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .metric:nth-child(2) {
+          border-right: 0;
+        }
+
+        .metric:nth-child(-n + 2) {
+          border-bottom: 1px solid var(--rule);
+        }
+
+        .panel-wide {
+          grid-column: auto;
+        }
+
+        .ruler,
+        .panel {
+          padding: 18px;
+        }
+
+        .ruler-head {
+          display: block;
+        }
+
+        .selection-summary {
+          margin-top: 6px;
+          text-align: left;
+        }
+
+        .bar-row {
+          grid-template-columns: 82px minmax(80px, 1fr);
+        }
+
+        .bar-value {
+          grid-column: 2;
+          margin-top: -8px;
+        }
+
+        .footer {
+          display: block;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+
+      @media print {
+        body {
+          background: #fff;
+        }
+
+        .page {
+          width: 100%;
+          padding: 0;
+        }
+
+        .workspace {
+          display: block;
+        }
+
+        .filters {
+          display: none;
+        }
+
+        .panel,
+        .ruler {
+          break-inside: avoid;
+          box-shadow: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="masthead">
+        <div>
+          <div class="eyebrow">Zaccount · 本地账本</div>
+          <h1>资金流动报告</h1>
+        </div>
+        <div class="source-note" id="source-note"></div>
+      </header>
+
+      <div class="workspace">
+        <aside class="filters" aria-label="分析筛选">
+          <div class="filters-header">
+            <h2>筛选账目</h2>
+            <button class="text-button" id="reset-filters" type="button">全部清除</button>
+          </div>
+          <div class="filters-body">
+            <div class="field">
+              <label for="start-date">时间范围</label>
+              <div class="date-pair">
+                <input id="start-date" type="date" aria-label="开始日期" />
+                <input id="end-date" type="date" aria-label="结束日期" />
+              </div>
+              <div class="quick-dates" id="quick-dates" aria-label="快捷时间范围"></div>
+            </div>
+            <div class="field">
+              <label for="account-filter">账户</label>
+              <select id="account-filter">
+                <option value="">全部账户</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="type-filter">类型</label>
+              <select id="type-filter">
+                <option value="">全部类型</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="category-filter">Category path</label>
+              <select id="category-filter">
+                <option value="">全部类别</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="query-filter">描述包含</label>
+              <input id="query-filter" type="search" placeholder="输入关键词" />
+            </div>
+            <div class="field tags-field">
+              <label>Tags</label>
+              <div class="tag-options" id="tag-options"></div>
+              <p class="tag-help">选择多个标签时，账目需同时包含这些标签。</p>
+            </div>
+          </div>
+        </aside>
+
+        <section class="results" aria-live="polite">
+          <div class="ruler">
+            <div class="ruler-head">
+              <span class="section-label">Funds scale</span>
+              <span class="selection-summary" id="selection-summary"></span>
+            </div>
+            <div class="funds-scale" aria-hidden="true">
+              <div class="scale-half expense">
+                <div class="scale-bar" id="expense-scale"></div>
+              </div>
+              <div class="scale-zero"></div>
+              <div class="scale-half income">
+                <div class="scale-bar" id="income-scale"></div>
+              </div>
+            </div>
+            <div class="scale-values">
+              <span class="expense-text" id="scale-expense"></span>
+              <span id="scale-net"></span>
+              <span class="income-text" id="scale-income"></span>
+            </div>
+          </div>
+
+          <div class="summary-grid">
+            <div class="metric income-metric">
+              <span class="metric-label">收入</span>
+              <strong class="metric-value" id="metric-income"></strong>
+            </div>
+            <div class="metric expense-metric">
+              <span class="metric-label">支出</span>
+              <strong class="metric-value" id="metric-expense"></strong>
+            </div>
+            <div class="metric">
+              <span class="metric-label">净变化</span>
+              <strong class="metric-value" id="metric-net"></strong>
+            </div>
+            <div class="metric">
+              <span class="metric-label">账目数量</span>
+              <strong class="metric-value" id="metric-count"></strong>
+            </div>
+          </div>
+
+          <div class="panel-grid">
+            <section class="panel panel-wide">
+              <div class="panel-head">
+                <h2>月度支出</h2>
+                <span class="panel-note">仅统计“支出”类型</span>
+              </div>
+              <div class="trend" id="monthly-trend"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <h2 id="accounts-title">账户余额</h2>
+                <span class="panel-note">含初始、收支与转账</span>
+              </div>
+              <div class="bars" id="account-bars"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <h2>支出类别</h2>
+                <span class="panel-note" id="category-note">第一层 category</span>
+              </div>
+              <div class="bars expense-bars" id="category-bars"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <h2>支出 Tags</h2>
+                <span class="panel-note">一笔账可计入多个标签</span>
+              </div>
+              <div class="bars expense-bars" id="tag-bars"></div>
+            </section>
+
+            <section class="panel panel-wide">
+              <div class="panel-head">
+                <h2>筛选结果</h2>
+                <span class="panel-note" id="entries-note"></span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>日期</th>
+                      <th>账户</th>
+                      <th>类型</th>
+                      <th>Category path</th>
+                      <th>Tags</th>
+                      <th>描述</th>
+                      <th style="text-align: right">金额</th>
+                    </tr>
+                  </thead>
+                  <tbody id="entries-body"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+
+          <footer class="footer">
+            <span>报告完全离线运行；筛选与计算不会发送到账本之外。</span>
+            <span id="report-fingerprint"></span>
+          </footer>
+        </section>
+      </div>
+    </main>
+
+    <script id="report-data" type="application/json">__ZACCOUNT_REPORT_DATA__</script>
+    <script>
+      (() => {
+        "use strict";
+
+        const report = JSON.parse(document.getElementById("report-data").textContent);
+        const entries = report.entries;
+        const signedTypes = new Map([
+          ["初始", 1n],
+          ["收入", 1n],
+          ["支出", -1n],
+          ["转入", 1n],
+          ["转出", -1n],
+        ]);
+        const amountScale = Math.max(
+          2,
+          ...entries.map((entry) => (entry.amount.split(".")[1] || "").length),
+        );
+        const scaleFactor = 10n ** BigInt(amountScale);
+        const selectedTags = new Set();
+        const elements = Object.fromEntries(
+          [
+            "start-date",
+            "end-date",
+            "account-filter",
+            "type-filter",
+            "category-filter",
+            "query-filter",
+          ].map((id) => [id, document.getElementById(id)]),
+        );
+
+        function toMinor(value) {
+          const text = String(value);
+          const negative = text.startsWith("-");
+          const unsigned = negative ? text.slice(1) : text;
+          const [whole, fraction = ""] = unsigned.split(".");
+          const minor =
+            BigInt(whole || "0") * scaleFactor +
+            BigInt((fraction + "0".repeat(amountScale)).slice(0, amountScale));
+          return negative ? -minor : minor;
+        }
+
+        function money(value) {
+          const numeric = Number(value) / Number(scaleFactor);
+          return new Intl.NumberFormat("zh-CN", {
+            style: "currency",
+            currency: "CNY",
+            minimumFractionDigits: 2,
+            maximumFractionDigits: Math.max(2, amountScale),
+          }).format(numeric);
+        }
+
+        function compactMoney(value) {
+          const numeric = Number(value) / Number(scaleFactor);
+          return new Intl.NumberFormat("zh-CN", {
+            notation: "compact",
+            maximumFractionDigits: 1,
+          }).format(numeric);
+        }
+
+        function absolute(value) {
+          return value < 0n ? -value : value;
+        }
+
+        function element(tag, className, text) {
+          const node = document.createElement(tag);
+          if (className) node.className = className;
+          if (text !== undefined) node.textContent = text;
+          return node;
+        }
+
+        function unique(values) {
+          return [...new Set(values)].sort((left, right) =>
+            left.localeCompare(right, "zh-CN"),
+          );
+        }
+
+        function appendOptions(select, values) {
+          for (const value of values) {
+            const option = document.createElement("option");
+            option.value = value;
+            option.textContent = value;
+            select.append(option);
+          }
+        }
+
+        function initializeFilters() {
+          appendOptions(
+            elements["account-filter"],
+            unique(entries.map((entry) => entry.account)),
+          );
+          appendOptions(
+            elements["type-filter"],
+            Object.keys(report.categoryTree),
+          );
+
+          for (const [type, tree] of Object.entries(report.categoryTree)) {
+            if (!Object.keys(tree).length) continue;
+            const group = document.createElement("optgroup");
+            group.label = type;
+            elements["category-filter"].append(group);
+            for (const [label, children] of Object.entries(tree)) {
+              const option = document.createElement("option");
+              option.value = JSON.stringify({ type, path: [label] });
+              option.textContent = label;
+              group.append(option);
+              walkCategoryChildren(group, type, children, [label], 1);
+            }
+          }
+
+          const tags = unique(entries.flatMap((entry) => entry.tags));
+          const tagContainer = document.getElementById("tag-options");
+          if (!tags.length) {
+            tagContainer.append(element("span", "tag-help", "账本中没有标签"));
+          }
+          for (const tag of tags) {
+            const button = element("button", "chip", tag);
+            button.type = "button";
+            button.setAttribute("aria-pressed", "false");
+            button.addEventListener("click", () => {
+              if (selectedTags.has(tag)) {
+                selectedTags.delete(tag);
+                button.setAttribute("aria-pressed", "false");
+              } else {
+                selectedTags.add(tag);
+                button.setAttribute("aria-pressed", "true");
+              }
+              render();
+            });
+            tagContainer.append(button);
+          }
+
+          const years = unique(entries.map((entry) => entry.date.slice(0, 4))).reverse();
+          const quickDates = document.getElementById("quick-dates");
+          const allButton = element("button", "chip", "全部");
+          allButton.type = "button";
+          allButton.addEventListener("click", () => setDateRange("", ""));
+          quickDates.append(allButton);
+          for (const year of years) {
+            const button = element("button", "chip", year);
+            button.type = "button";
+            button.addEventListener("click", () =>
+              setDateRange(`${year}-01-01`, `${year}-12-31`),
+            );
+            quickDates.append(button);
+          }
+
+          for (const control of Object.values(elements)) {
+            control.addEventListener("input", render);
+            control.addEventListener("change", render);
+          }
+          document
+            .getElementById("reset-filters")
+            .addEventListener("click", resetFilters);
+        }
+
+        function walkCategoryChildren(group, type, node, path, depth) {
+          for (const [label, children] of Object.entries(node)) {
+            const nextPath = [...path, label];
+            const option = document.createElement("option");
+            option.value = JSON.stringify({ type, path: nextPath });
+            option.textContent = `${"　".repeat(depth)}${label}`;
+            group.append(option);
+            walkCategoryChildren(group, type, children, nextPath, depth + 1);
+          }
+        }
+
+        function setDateRange(start, end) {
+          elements["start-date"].value = start;
+          elements["end-date"].value = end;
+          render();
+        }
+
+        function resetFilters() {
+          for (const control of Object.values(elements)) control.value = "";
+          selectedTags.clear();
+          document
+            .querySelectorAll("#tag-options .chip")
+            .forEach((button) => button.setAttribute("aria-pressed", "false"));
+          render();
+        }
+
+        function currentCategory() {
+          const value = elements["category-filter"].value;
+          return value ? JSON.parse(value) : null;
+        }
+
+        function matches(entry) {
+          const start = elements["start-date"].value;
+          const end = elements["end-date"].value;
+          const account = elements["account-filter"].value;
+          const type = elements["type-filter"].value;
+          const category = currentCategory();
+          const query = elements["query-filter"].value.trim().toLocaleLowerCase("zh-CN");
+
+          if (start && entry.date < start) return false;
+          if (end && entry.date > end) return false;
+          if (account && entry.account !== account) return false;
+          if (type && entry.type !== type) return false;
+          if (
+            category &&
+            (entry.type !== category.type ||
+              !category.path.every((part, index) => entry.categories[index] === part))
+          ) {
+            return false;
+          }
+          if (![...selectedTags].every((tag) => entry.tags.includes(tag))) return false;
+          if (
+            query &&
+            !entry.description.toLocaleLowerCase("zh-CN").includes(query)
+          ) {
+            return false;
+          }
+          return true;
+        }
+
+        function sumBy(entriesToSum, predicate, signed = false) {
+          return entriesToSum.reduce((total, entry) => {
+            if (predicate && !predicate(entry)) return total;
+            const amount = toMinor(entry.amount);
+            return total + (signed ? amount * signedTypes.get(entry.type) : amount);
+          }, 0n);
+        }
+
+        function aggregate(items, labelFor, amountFor) {
+          const totals = new Map();
+          for (const item of items) {
+            const labels = labelFor(item);
+            for (const label of Array.isArray(labels) ? labels : [labels]) {
+              if (!label) continue;
+              totals.set(label, (totals.get(label) || 0n) + amountFor(item));
+            }
+          }
+          return [...totals.entries()].sort((left, right) =>
+            left[1] === right[1] ? left[0].localeCompare(right[0], "zh-CN") : left[1] > right[1] ? -1 : 1,
+          );
+        }
+
+        function renderBars(containerId, values, limit = 9) {
+          const container = document.getElementById(containerId);
+          container.replaceChildren();
+          const visible = values.slice(0, limit);
+          if (!visible.length) {
+            container.append(element("div", "empty", "当前筛选下没有可展示的数据"));
+            return;
+          }
+          const max = visible.reduce(
+            (current, [, amount]) =>
+              absolute(amount) > current ? absolute(amount) : current,
+            0n,
+          );
+          for (const [label, amount] of visible) {
+            const row = element("div", "bar-row");
+            const labelNode = element("span", "bar-label", label);
+            labelNode.title = label;
+            const track = element("div", "bar-track");
+            const fill = element("div", "bar-fill");
+            const ratio =
+              max === 0n
+                ? 0
+                : Number((absolute(amount) * 10000n) / max) / 100;
+            fill.style.width = `${Math.max(0, ratio)}%`;
+            track.append(fill);
+            row.append(labelNode, track, element("span", "bar-value", money(amount)));
+            container.append(row);
+          }
+        }
+
+        function renderTrend(filtered) {
+          const monthly = aggregate(
+            filtered.filter((entry) => entry.type === "支出"),
+            (entry) => entry.date.slice(0, 7),
+            (entry) => toMinor(entry.amount),
+          ).sort((left, right) => left[0].localeCompare(right[0]));
+          const container = document.getElementById("monthly-trend");
+          container.replaceChildren();
+          container.style.setProperty("--month-count", Math.max(monthly.length, 1));
+          if (!monthly.length) {
+            container.append(element("div", "empty", "当前筛选下没有支出"));
+            return;
+          }
+          const max = monthly.reduce(
+            (current, [, amount]) => (amount > current ? amount : current),
+            0n,
+          );
+          for (const [month, amount] of monthly) {
+            const column = element("div", "month");
+            const barWrap = element("div", "month-bar-wrap");
+            const bar = element("div", "month-bar");
+            const ratio = max === 0n ? 0 : Number((amount * 10000n) / max) / 100;
+            bar.style.height = `${Math.max(1, ratio)}%`;
+            bar.title = `${month}：${money(amount)}`;
+            barWrap.append(bar);
+            column.append(
+              barWrap,
+              element("span", "month-value", compactMoney(amount)),
+              element("span", "month-label", month),
+            );
+            container.append(column);
+          }
+        }
+
+        function renderEntries(filtered) {
+          const body = document.getElementById("entries-body");
+          body.replaceChildren();
+          const visible = [...filtered].reverse().slice(0, 100);
+          document.getElementById("entries-note").textContent =
+            filtered.length > 100
+              ? `显示最新 100 / ${filtered.length} 条`
+              : `共 ${filtered.length} 条`;
+          if (!visible.length) {
+            const row = document.createElement("tr");
+            const cell = element("td", "empty", "没有符合当前筛选条件的账目");
+            cell.colSpan = 7;
+            row.append(cell);
+            body.append(row);
+            return;
+          }
+          for (const entry of visible) {
+            const row = document.createElement("tr");
+            if (entry.type === "支出") row.className = "type-expense";
+            if (entry.type === "收入") row.className = "type-income";
+            const amount = element("td", "amount", money(toMinor(entry.amount)));
+            row.append(
+              element("td", "", entry.date),
+              element("td", "", entry.account),
+              element("td", "", entry.type),
+              element("td", "path", entry.categories.join(" / ") || "—"),
+              element("td", "path", entry.tags.join(" · ") || "—"),
+              element("td", "description", entry.description || "—"),
+              amount,
+            );
+            body.append(row);
+          }
+        }
+
+        function activeSelectionText(filtered) {
+          const labels = [];
+          const start = elements["start-date"].value;
+          const end = elements["end-date"].value;
+          if (start || end) labels.push(`${start || "最早"} 至 ${end || "最新"}`);
+          if (elements["account-filter"].value) labels.push(elements["account-filter"].value);
+          if (elements["type-filter"].value) labels.push(elements["type-filter"].value);
+          const category = currentCategory();
+          if (category) labels.push(category.path.join(" / "));
+          if (selectedTags.size) labels.push([...selectedTags].join(" + "));
+          if (elements["query-filter"].value.trim()) {
+            labels.push(`“${elements["query-filter"].value.trim()}”`);
+          }
+          return `${labels.length ? labels.join(" · ") : "全部账目"} · ${filtered.length} 条`;
+        }
+
+        function render() {
+          const filtered = entries.filter(matches);
+          const income = sumBy(filtered, (entry) => entry.type === "收入");
+          const expense = sumBy(filtered, (entry) => entry.type === "支出");
+          const net = sumBy(filtered, null, true);
+          const scaleMax = income > expense ? income : expense;
+          const incomeWidth =
+            scaleMax === 0n ? 0 : Number((income * 10000n) / scaleMax) / 100;
+          const expenseWidth =
+            scaleMax === 0n ? 0 : Number((expense * 10000n) / scaleMax) / 100;
+
+          document.getElementById("income-scale").style.width = `${incomeWidth}%`;
+          document.getElementById("expense-scale").style.width = `${expenseWidth}%`;
+          document.getElementById("scale-income").textContent = `收入 ${money(income)}`;
+          document.getElementById("scale-expense").textContent = `${money(expense)} 支出`;
+          document.getElementById("scale-net").textContent = `净 ${money(net)}`;
+          document.getElementById("metric-income").textContent = money(income);
+          document.getElementById("metric-expense").textContent = money(expense);
+          document.getElementById("metric-net").textContent = money(net);
+          document.getElementById("metric-count").textContent =
+            new Intl.NumberFormat("zh-CN").format(filtered.length);
+          document.getElementById("selection-summary").textContent =
+            activeSelectionText(filtered);
+
+          const accountTotals = aggregate(
+            filtered,
+            (entry) => entry.account,
+            (entry) => toMinor(entry.amount) * signedTypes.get(entry.type),
+          );
+          renderBars("account-bars", accountTotals);
+          document.getElementById("accounts-title").textContent =
+            elements["start-date"].value ? "区间账户变动" : "账户余额";
+
+          const expenseEntries = filtered.filter((entry) => entry.type === "支出");
+          const category = currentCategory();
+          const categoryDepth =
+            category && category.type === "支出" ? category.path.length : 0;
+          const categoryTotals = aggregate(
+            expenseEntries,
+            (entry) =>
+              entry.categories[categoryDepth] ||
+              (categoryDepth ? category.path[categoryDepth - 1] : "未分类"),
+            (entry) => toMinor(entry.amount),
+          );
+          renderBars("category-bars", categoryTotals);
+          document.getElementById("category-note").textContent =
+            categoryDepth > 0
+              ? `${category.path.join(" / ")} 的下一层`
+              : "第一层 category";
+
+          const tagTotals = aggregate(
+            expenseEntries,
+            (entry) => entry.tags,
+            (entry) => toMinor(entry.amount),
+          );
+          renderBars("tag-bars", tagTotals);
+          renderTrend(filtered);
+          renderEntries(filtered);
+        }
+
+        function renderMetadata() {
+          const source = report.source;
+          const generatedAt = new Intl.DateTimeFormat("zh-CN", {
+            dateStyle: "long",
+            timeStyle: "short",
+          }).format(new Date(report.generatedAt));
+          const sourceNode = document.getElementById("source-note");
+          const firstLine = document.createElement("div");
+          firstLine.append(
+            document.createTextNode("数据文件 "),
+            element("strong", "", source.fileName),
+            document.createTextNode(` · ${source.entryCount} 条账目`),
+          );
+          const secondLine = element(
+            "div",
+            "",
+            `${source.firstEntryDate || "—"} 至 ${source.lastEntryDate || "—"} · 生成于 ${generatedAt}`,
+          );
+          sourceNode.append(firstLine, secondLine);
+          document.getElementById("report-fingerprint").textContent =
+            `账本指纹 ${source.sha256.slice(0, 12)} · 数据格式 v${report.schemaVersion}`;
+        }
+
+        renderMetadata();
+        initializeFilters();
+        render();
+      })();
+    </script>
+  </body>
+</html>

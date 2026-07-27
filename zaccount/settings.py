@@ -17,6 +17,10 @@ def get_data_dir() -> Path:
     return PROJECT_ROOT / configured
 
 
+def get_ledger_path() -> Path:
+    return get_data_dir() / "transaction.csv"
+
+
 def load_category_tree() -> dict[str, dict]:
     with (PROJECT_ROOT / "config" / "ctg.jsonc").open(encoding="utf-8") as file:
         return commentjson.load(file)

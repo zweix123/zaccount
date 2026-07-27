@@ -3,11 +3,15 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import date
 from decimal import Decimal
-from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from .domain import EntryType, LedgerEntry
+
+
+def _to_camel(name: str) -> str:
+    first, *rest = name.split("_")
+    return first + "".join(part.capitalize() for part in rest)
 
 
 class LedgerFilter(BaseModel):
@@ -15,7 +19,7 @@ class LedgerFilter(BaseModel):
     end_date: date | None = None
     account: str | None = None
     type: EntryType | None = None
-    category: str | None = None
+    category_path: tuple[str, ...] = ()
     tag: str | None = None
     query: str | None = None
 
@@ -28,7 +32,9 @@ class LedgerFilter(BaseModel):
             return False
         if self.type and entry.type is not self.type:
             return False
-        if self.category and self.category not in entry.categories:
+        if self.category_path and entry.categories[: len(self.category_path)] != (
+            self.category_path
+        ):
             return False
         if self.tag and self.tag not in entry.tags:
             return False
@@ -37,9 +43,37 @@ class LedgerFilter(BaseModel):
         return True
 
 
+class AnalysisModel(BaseModel):
+    model_config = ConfigDict(
+        alias_generator=_to_camel,
+        frozen=True,
+        populate_by_name=True,
+    )
+
+
+class AmountByLabel(AnalysisModel):
+    label: str
+    amount: Decimal
+
+
+class AnalysisSummary(AnalysisModel):
+    income: Decimal
+    expense: Decimal
+    net_change: Decimal
+
+
+class AnalysisResult(AnalysisModel):
+    count: int
+    summary: AnalysisSummary
+    accounts: tuple[AmountByLabel, ...]
+    monthly_expense: tuple[AmountByLabel, ...]
+    category_expense: tuple[AmountByLabel, ...]
+    tag_expense: tuple[AmountByLabel, ...]
+
+
 def analyse(
     entries: list[LedgerEntry], ledger_filter: LedgerFilter | None = None
-) -> dict[str, Any]:
+) -> AnalysisResult:
     ledger_filter = ledger_filter or LedgerFilter()
     filtered = [entry for entry in entries if ledger_filter.matches(entry)]
 
@@ -69,26 +103,26 @@ def analyse(
         for tag in entry.tags:
             tag_expense[tag] += entry.amount
 
-    def sorted_totals(values: dict[str, Decimal]) -> list[dict[str, Any]]:
-        return [
-            {"label": label, "amount": float(amount)}
+    def sorted_totals(values: dict[str, Decimal]) -> tuple[AmountByLabel, ...]:
+        return tuple(
+            AmountByLabel(label=label, amount=amount)
             for label, amount in sorted(
                 values.items(), key=lambda item: item[1], reverse=True
             )
-        ]
+        )
 
-    return {
-        "count": len(filtered),
-        "summary": {
-            "income": float(income),
-            "expense": float(expense),
-            "netChange": float(net_change),
-        },
-        "accounts": sorted_totals(account_totals),
-        "monthlyExpense": [
-            {"label": label, "amount": float(amount)}
+    return AnalysisResult(
+        count=len(filtered),
+        summary=AnalysisSummary(
+            income=income,
+            expense=expense,
+            net_change=net_change,
+        ),
+        accounts=sorted_totals(account_totals),
+        monthly_expense=tuple(
+            AmountByLabel(label=label, amount=amount)
             for label, amount in sorted(monthly_expense.items())
-        ],
-        "categoryExpense": sorted_totals(category_expense),
-        "tagExpense": sorted_totals(tag_expense),
-    }
+        ),
+        category_expense=sorted_totals(category_expense),
+        tag_expense=sorted_totals(tag_expense),
+    )

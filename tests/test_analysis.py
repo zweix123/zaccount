@@ -37,17 +37,17 @@ def test_analysis_uses_signed_totals_and_ignores_empty_tags() -> None:
         ]
     )
 
-    assert result["summary"] == {
-        "income": 100.0,
-        "expense": 25.0,
-        "netChange": 575.0,
-    }
-    assert result["accounts"] == [
-        {"label": "银行卡", "amount": 545.0},
-        {"label": "微信", "amount": 30.0},
+    assert result.summary.income == 100
+    assert result.summary.expense == 25
+    assert result.summary.net_change == 575
+    assert [(item.label, item.amount) for item in result.accounts] == [
+        ("银行卡", 545),
+        ("微信", 30),
     ]
-    assert result["tagExpense"] == [{"label": "聚餐", "amount": 25.0}]
-    assert result["count"] == 5
+    assert [(item.label, item.amount) for item in result.tag_expense] == [
+        ("聚餐", 25)
+    ]
+    assert result.count == 5
 
 
 def test_analysis_filter_is_shared_by_every_aggregation() -> None:
@@ -64,7 +64,27 @@ def test_analysis_filter_is_shared_by_every_aggregation() -> None:
 
     result = analyse(entries, LedgerFilter(account="微信", tag="周末"))
 
-    assert result["count"] == 1
-    assert result["summary"]["expense"] == 50.0
-    assert result["monthlyExpense"] == [{"label": "2026-02", "amount": 50.0}]
-    assert result["categoryExpense"] == [{"label": "购物", "amount": 50.0}]
+    assert result.count == 1
+    assert result.summary.expense == 50
+    assert [(item.label, item.amount) for item in result.monthly_expense] == [
+        ("2026-02", 50)
+    ]
+    assert [(item.label, item.amount) for item in result.category_expense] == [
+        ("购物", 50)
+    ]
+
+
+def test_category_filter_matches_a_path_prefix() -> None:
+    entries = [
+        entry(categories=["餐饮", "正餐"], amount="20"),
+        entry(categories=["餐饮", "饮料"], amount="8"),
+        entry(categories=["购物", "快消"], amount="30"),
+    ]
+
+    result = analyse(
+        entries,
+        LedgerFilter(category_path=("餐饮",)),
+    )
+
+    assert result.count == 2
+    assert result.summary.expense == 28

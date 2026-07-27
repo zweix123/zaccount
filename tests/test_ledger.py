@@ -5,10 +5,9 @@ from decimal import Decimal
 from pathlib import Path
 
 import pytest
-from pydantic import ValidationError
 
-from zaccount.domain import EntryDraft, EntryType, TransferDraft
-from zaccount.ledger import CSV_FIELDS, LedgerError, LedgerStore
+from zaccount.domain import EntryType
+from zaccount.ledger import CSV_FIELDS, LedgerError, load_ledger
 
 
 CATEGORY_TREE = {
@@ -20,146 +19,77 @@ CATEGORY_TREE = {
 }
 
 
-def write_ledger(path: Path) -> None:
-    rows = [
-        {
-            "date": "2026-01-01",
-            "account": "银行卡",
-            "type": "收入",
-            "amount": "1000",
-            "categorys": "工资",
-            "tags": "",
-            "desc": "月初工资",
-        },
-        {
-            "date": "2026-01-02",
-            "account": "银行卡",
-            "type": "支出",
-            "amount": "20",
-            "categorys": "餐饮,午饭",
-            "tags": "工作日",
-            "desc": "午饭",
-        },
-    ]
+def write_ledger(path: Path, rows: list[dict[str, str]]) -> None:
     with path.open("w", encoding="utf-8", newline="") as file:
         writer = csv.DictWriter(file, fieldnames=CSV_FIELDS)
         writer.writeheader()
         writer.writerows(rows)
 
 
-@pytest.fixture
-def store(tmp_path: Path) -> LedgerStore:
-    write_ledger(tmp_path / "transaction.csv")
-    return LedgerStore(tmp_path, CATEGORY_TREE)
+def row(**overrides: str) -> dict[str, str]:
+    values = {
+        "date": "2026-01-01",
+        "account": "银行卡",
+        "type": "支出",
+        "amount": "20",
+        "categorys": "餐饮,午饭",
+        "tags": "工作日",
+        "desc": "午饭",
+    }
+    values.update(overrides)
+    return values
 
 
-def test_add_entry_sorts_and_creates_backup(store: LedgerStore) -> None:
-    added = store.add_entry(
-        EntryDraft(
-            date="2025-12-31",
-            account="银行卡",
-            type=EntryType.EXPENSE,
-            amount="12.50",
-            categories=["餐饮"],
-            tags=[],
-            description="跨年前的一餐",
-        )
+def test_loads_and_validates_a_read_only_ledger(tmp_path: Path) -> None:
+    path = tmp_path / "transaction.csv"
+    write_ledger(
+        path,
+        [
+            row(type="初始", amount="500", categorys=""),
+            row(type="收入", amount="1000", categorys="工资"),
+            row(date="2026-01-02"),
+        ],
     )
 
-    entries = store.load()
-    backups = list((store.data_dir / "backups").glob("transaction_*.csv"))
+    entries = load_ledger(path, CATEGORY_TREE)
 
-    assert entries[0] == added
     assert len(entries) == 3
-    assert len(backups) == 1
-    assert len(LedgerStore(store.data_dir, CATEGORY_TREE).load()) == 3
+    assert entries[0].type is EntryType.INITIAL
+    assert entries[0].signed_amount() == Decimal("500")
+    assert entries[-1].categories == ("餐饮", "午饭")
 
 
-def test_initial_entry_has_positive_amount_and_no_category(
-    store: LedgerStore,
-) -> None:
-    added = store.add_entry(
-        EntryDraft(
-            date="2025-12-31",
-            account="银行卡",
-            type=EntryType.INITIAL,
-            amount="500",
-            categories=[],
-        )
+def test_rejects_unsorted_dates(tmp_path: Path) -> None:
+    path = tmp_path / "transaction.csv"
+    write_ledger(
+        path,
+        [
+            row(date="2026-01-02"),
+            row(date="2026-01-01"),
+        ],
     )
 
-    reloaded = store.load()[0]
-
-    assert added.signed_amount() == Decimal("500")
-    assert reloaded == added
-    assert reloaded.categories == ()
+    with pytest.raises(LedgerError, match="日期早于前一条"):
+        load_ledger(path, CATEGORY_TREE)
 
 
-def test_initial_entry_rejects_non_positive_amount_or_category() -> None:
-    with pytest.raises(ValidationError):
-        EntryDraft(
-            date="2026-01-01",
-            account="银行卡",
-            type=EntryType.INITIAL,
-            amount="0",
-            categories=[],
-        )
-
-    with pytest.raises(ValidationError, match="初始账目不能填写类别"):
-        EntryDraft(
-            date="2026-01-01",
-            account="银行卡",
-            type=EntryType.INITIAL,
-            amount="500",
-            categories=["其他"],
-        )
-
-
-def test_transfer_is_committed_as_balanced_pair(store: LedgerStore) -> None:
-    outgoing, incoming = store.add_transfer(
-        TransferDraft(
-            date="2026-01-03",
-            source_account="银行卡",
-            destination_account="微信",
-            amount="300",
-            tags=["调拨"],
-            description="日常备用",
-        )
-    )
-
-    entries = store.load()
-
-    assert outgoing.type is EntryType.TRANSFER_OUT
-    assert incoming.type is EntryType.TRANSFER_IN
-    assert outgoing.amount == incoming.amount
-    assert entries[-2:] == [outgoing, incoming]
-
-
-def test_invalid_category_leaves_file_unchanged(store: LedgerStore) -> None:
-    before = store.path.read_bytes()
+def test_rejects_invalid_category_path(tmp_path: Path) -> None:
+    path = tmp_path / "transaction.csv"
+    write_ledger(path, [row(categorys="餐饮,不存在")])
 
     with pytest.raises(LedgerError, match="类别路径无效"):
-        store.add_entry(
-            EntryDraft(
-                date="2026-01-03",
-                account="银行卡",
-                type=EntryType.EXPENSE,
-                amount="99",
-                categories=["不存在"],
-            )
-        )
-
-    assert store.path.read_bytes() == before
-    assert not (store.data_dir / "backups").exists()
+        load_ledger(path, CATEGORY_TREE)
 
 
-def test_transfer_rejects_same_account(store: LedgerStore) -> None:
-    with pytest.raises(LedgerError, match="不能相同"):
-        store.add_transfer(
-            TransferDraft(
-                date="2026-01-03",
-                source_account="银行卡",
-                destination_account="银行卡",
-                amount="1",
-            )
-        )
+def test_rejects_unbalanced_internal_transfers(tmp_path: Path) -> None:
+    path = tmp_path / "transaction.csv"
+    write_ledger(
+        path,
+        [
+            row(type="转出", amount="30", categorys="内转"),
+            row(type="转入", amount="20", categorys="内转", account="微信"),
+        ],
+    )
+
+    with pytest.raises(LedgerError, match="内转不平衡"):
+        load_ledger(path, CATEGORY_TREE)
