@@ -13,8 +13,9 @@ HTML 报告。报告不需要服务器，不会上传账目，也不会加载远
 - 生成带 SHA-256 账本指纹的 `report.json` 和独立 `report.html`。
 - 在读取时校验 CSV 字段、日期顺序、category path 和内部转账平衡。
 
-项目不再提供录入页面或本地服务。账目增删改直接在工作 CSV 中完成，生成报告的
-过程只读，不会修改或备份账本。
+项目不再提供录入页面或本地服务。账目增删改直接在工作 CSV 中完成。每次生成报告
+前，程序会在账本同目录检查 `transaction_YYYY-MM-DD.csv`；当天快照不存在时，
+先复制当前工作 CSV，再只读校验并生成报告。一天内后续生成不会覆盖当天快照。
 
 产品范围、领域规则和架构见：
 
@@ -71,7 +72,7 @@ uv run python -m zaccount \
 
 ```bash
 uv run pytest
-uv run python -m compileall zaccount entry.py utils.py
+uv run python -m compileall zaccount
 ```
 
 测试只使用临时目录，不会读写 `.env` 指向的个人账本。

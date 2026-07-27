@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 import csv
+import os
+import shutil
+import tempfile
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
@@ -18,6 +22,8 @@ def load_ledger(
 ) -> list[LedgerEntry]:
     if not path.exists():
         raise LedgerError(f"找不到数据文件：{path}")
+
+    _ensure_daily_backup(path)
 
     entries: list[LedgerEntry] = []
     with path.open(encoding="utf-8-sig", newline="") as file:
@@ -37,6 +43,33 @@ def load_ledger(
 
     _validate_ledger(entries, category_tree)
     return entries
+
+
+def _ensure_daily_backup(path: Path) -> None:
+    backup_path = path.with_name(
+        f"{path.stem}_{date.today().isoformat()}{path.suffix}"
+    )
+    if backup_path.exists():
+        return
+
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            prefix=f".{backup_path.stem}_",
+            suffix=".tmp",
+            dir=path.parent,
+            delete=False,
+        ) as file:
+            temporary_path = Path(file.name)
+        shutil.copy2(path, temporary_path)
+        try:
+            os.link(temporary_path, backup_path)
+        except FileExistsError:
+            # Another analysis may have created today's backup concurrently.
+            pass
+    finally:
+        if temporary_path and temporary_path.exists():
+            temporary_path.unlink()
 
 
 def _validate_ledger(

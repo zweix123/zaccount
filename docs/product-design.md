@@ -28,8 +28,8 @@ telemetry, multi-user model, or database.
   the visible entry list together.
 - **One calculation model.** Initial rendering and browser interaction follow the
   same type signs and category-prefix rules.
-- **The source is read-only.** Report generation validates but never modifies,
-  copies, or backs up the ledger.
+- **The working source is never modified.** Before analysis, report generation
+  preserves the first observed ledger state of the day as a dated sibling CSV.
 - **Generated output is private.** The report embeds the fields required for
   interactive analysis and must be protected like the source CSV.
 
@@ -70,10 +70,12 @@ the ledger path, category tree, and output directory. Callers do not manage CSV
 rows, validation order, serialization, template escaping, fingerprints, or atomic
 output replacement.
 
-The **Ledger module** is a read-only adapter for the durable CSV seam. The
-**Analysis module** is pure in-process calculation. The HTML renderer is an
-offline adapter over the versioned report data; it does not become a second source
-of durable truth.
+The **Ledger module** is the adapter for the durable CSV seam. Before reading, it
+creates `transaction_YYYY-MM-DD.csv` beside the working file when that day's
+snapshot does not already exist. It never changes the working file or overwrites a
+daily snapshot. The **Analysis module** is pure in-process calculation. The HTML
+renderer is an offline adapter over the versioned report data; it does not become
+a second source of durable truth.
 
 ## Report data contract
 

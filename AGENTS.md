@@ -19,7 +19,8 @@ decisions live in `docs/product-design.md` and `docs/adr/`.
   `python -m zaccount`.
 - `zaccount/domain.py` defines ledger entries, entry types, and signed amounts.
 - `zaccount/ledger.py` is the only module that reads the durable CSV ledger. It
-  owns field, ordering, category-path, and transfer-balance validation.
+  owns daily pre-analysis snapshots plus field, ordering, category-path, and
+  transfer-balance validation.
 - `zaccount/analysis.py` owns shared filtering and financial aggregations.
 - `zaccount/reporting.py` owns the versioned report data, source fingerprint,
   safe serialization, template rendering, and atomic artifact replacement.
@@ -27,8 +28,6 @@ decisions live in `docs/product-design.md` and `docs/adr/`.
   local CSS and JavaScript.
 - `zaccount/settings.py` resolves `DATA_DIR` and loads `config/ctg.jsonc`.
 - `tests/` contains Python behavior tests.
-- `entry.py` and `utils.py` are legacy compatibility modules. Do not add new
-  application behavior to them.
 
 Runtime data lives in the directory selected by `DATA_DIR`, defaulting to `data/`.
 The working file is `transaction.csv`. Generated artifacts default to `output/`.
@@ -44,8 +43,7 @@ reports, generated output, or caches.
   `output/report.html`.
 - `uv run python -m zaccount --open` generates and opens the HTML report.
 - `uv run pytest` runs the complete behavior suite.
-- `uv run python -m compileall zaccount entry.py utils.py` performs a quick syntax
-  check.
+- `uv run python -m compileall zaccount` performs a quick syntax check.
 
 Commit `uv.lock` when dependencies change.
 
@@ -70,9 +68,10 @@ within a date.
 An internal transfer is one intent represented by equal `转出 / 内转` and
 `转入 / 内转` totals. Report generation rejects an unbalanced ledger.
 
-Reads and report generation must never modify or back up the source ledger. Report
-artifacts are written through temporary files in the output directory and
-atomically replaced.
+Reads and report generation must never modify the working ledger. Before analysis,
+create `transaction_YYYY-MM-DD.csv` beside it if that day's snapshot does not
+already exist; never overwrite an existing daily snapshot. Report artifacts are
+written through temporary files in the output directory and atomically replaced.
 
 ## Python Style and Module Design
 
@@ -114,13 +113,14 @@ Run:
 
 ```bash
 uv run pytest
-uv run python -m compileall zaccount entry.py utils.py
+uv run python -m compileall zaccount
 ```
 
 Use temporary directories for storage and report tests. Never read or write the
 real ledger in automated tests. Cover successful behavior and invariant failures,
-especially invalid category paths, ordering, unbalanced transfers, decimal
-serialization, HTML data escaping, source-path privacy, and output replacement.
+  especially daily snapshot preservation, invalid category paths, ordering,
+  unbalanced transfers, decimal serialization, HTML data escaping, source-path
+  privacy, and output replacement.
 
 Browser verification uses synthetic data. Never include real ledger contents in
 screenshots, fixtures, logs, or review descriptions.

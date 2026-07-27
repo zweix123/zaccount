@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from zaccount.__main__ import main
@@ -107,5 +107,8 @@ def test_cli_generates_report_from_explicit_paths(
     captured = capsys.readouterr()
     assert exit_code == 0
     assert "报告生成完成" in captured.out
+    assert (
+        tmp_path / f"transaction_{date.today().isoformat()}.csv"
+    ).is_file()
     assert (output_dir / "report.html").is_file()
     assert (output_dir / "report.json").is_file()

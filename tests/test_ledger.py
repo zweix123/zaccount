@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
@@ -57,6 +58,22 @@ def test_loads_and_validates_a_read_only_ledger(tmp_path: Path) -> None:
     assert entries[0].type is EntryType.INITIAL
     assert entries[0].signed_amount() == Decimal("500")
     assert entries[-1].categories == ("餐饮", "午饭")
+
+
+def test_load_creates_one_daily_backup_before_analysis(tmp_path: Path) -> None:
+    path = tmp_path / "transaction.csv"
+    write_ledger(path, [row()])
+    original = path.read_bytes()
+    backup_path = tmp_path / f"transaction_{date.today().isoformat()}.csv"
+
+    load_ledger(path, CATEGORY_TREE)
+
+    assert backup_path.read_bytes() == original
+
+    write_ledger(path, [row(amount="25")])
+    load_ledger(path, CATEGORY_TREE)
+
+    assert backup_path.read_bytes() == original
 
 
 def test_rejects_unsorted_dates(tmp_path: Path) -> None:
