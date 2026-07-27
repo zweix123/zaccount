@@ -1,23 +1,34 @@
 # OS
-# macOS
 .DS_Store
 
-# IDE
-## VSCode
-.vscode
+# Editor
+## Settings
+.idea/
+.vscode/
+.cursor/
+.obsidian/workspace.json
+## Backup
+*.swp
 
-# Programming Languages
+# AI Coding
+.claude/settings.local.json
+CLAUDE.local.md
+.claude/skills
+.agents/settings.local.json
+AGENTS.local.md
+.agents/skills
+
+# Compile
 ## Python
 .venv
 .mypy_cache
 **/__pycache__
 
+# Test & Debug & Run
+
+# Other
+
 # Project
 .env
 data
 output
-frontend/node_modules
-frontend/dist
-frontend/*.tsbuildinfo
-frontend/vite.config.js
-frontend/vite.config.d.ts
