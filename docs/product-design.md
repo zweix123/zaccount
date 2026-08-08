@@ -46,7 +46,7 @@ The canonical language is recorded in [`CONTEXT.md`](../CONTEXT.md).
 - Selecting a category in the report matches that path and every descendant.
 - Selecting multiple tags requires a ledger entry to contain every selected tag.
 - Internal transfer-in and transfer-out totals must balance.
-- The durable header remains `date,account,type,amount,categorys,tags,desc`.
+- The durable header is `date,account,type,amount,categories,tags,desc`.
 
 ## Architecture
 

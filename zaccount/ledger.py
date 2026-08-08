@@ -10,7 +10,7 @@ from pathlib import Path
 
 from .domain import EntryType, LedgerEntry
 
-CSV_FIELDS = ["date", "account", "type", "amount", "categorys", "tags", "desc"]
+CSV_FIELDS = ["date", "account", "type", "amount", "categories", "tags", "desc"]
 
 
 class LedgerError(Exception):

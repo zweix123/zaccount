@@ -33,7 +33,7 @@ def row(**overrides: str) -> dict[str, str]:
         "account": "银行卡",
         "type": "支出",
         "amount": "20",
-        "categorys": "餐饮,午饭",
+        "categories": "餐饮,午饭",
         "tags": "工作日",
         "desc": "午饭",
     }
@@ -46,8 +46,8 @@ def test_loads_and_validates_a_read_only_ledger(tmp_path: Path) -> None:
     write_ledger(
         path,
         [
-            row(type="初始", amount="500", categorys=""),
-            row(type="收入", amount="1000", categorys="工资"),
+            row(type="初始", amount="500", categories=""),
+            row(type="收入", amount="1000", categories="工资"),
             row(date="2026-01-02"),
         ],
     )
@@ -90,9 +90,23 @@ def test_rejects_unsorted_dates(tmp_path: Path) -> None:
         load_ledger(path, CATEGORY_TREE)
 
 
+def test_rejects_legacy_categorys_header(tmp_path: Path) -> None:
+    path = tmp_path / "transaction.csv"
+    path.write_text(
+        "date,account,type,amount,categorys,tags,desc\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        LedgerError,
+        match=r"期望 date,account,type,amount,categories,tags,desc",
+    ):
+        load_ledger(path, CATEGORY_TREE)
+
+
 def test_rejects_invalid_category_path(tmp_path: Path) -> None:
     path = tmp_path / "transaction.csv"
-    write_ledger(path, [row(categorys="餐饮,不存在")])
+    write_ledger(path, [row(categories="餐饮,不存在")])
 
     with pytest.raises(LedgerError, match="类别路径无效"):
         load_ledger(path, CATEGORY_TREE)
@@ -103,8 +117,8 @@ def test_rejects_unbalanced_internal_transfers(tmp_path: Path) -> None:
     write_ledger(
         path,
         [
-            row(type="转出", amount="30", categorys="内转"),
-            row(type="转入", amount="20", categorys="内转", account="微信"),
+            row(type="转出", amount="30", categories="内转"),
+            row(type="转入", amount="20", categories="内转", account="微信"),
         ],
     )
 

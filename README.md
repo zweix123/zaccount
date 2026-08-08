@@ -79,13 +79,14 @@ uv run python -m compileall zaccount
 
 ## 数据格式
 
-工作文件字段顺序保持兼容：
+工作文件使用以下字段顺序：
 
 ```text
-date,account,type,amount,categorys,tags,desc
+date,account,type,amount,categories,tags,desc
 ```
 
-`categorys` 是历史 CSV 字段拼写，只存在于适配层；代码和界面使用
+从旧版本升级时，需要先把 `transaction.csv` 表头中的 `categorys` 手动改为
+`categories`；程序不兼容旧表头，也不会自动修改账本。代码和界面统一使用
 `categories` 与 “category path”。类别树由
 [config/ctg.jsonc](config/ctg.jsonc) 管理。
 

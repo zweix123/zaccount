@@ -74,7 +74,7 @@ class LedgerEntry(BaseModel):
             account=row.get("account"),
             type=row.get("type"),
             amount=row.get("amount"),
-            categories=row.get("categorys"),
+            categories=row.get("categories"),
             tags=row.get("tags"),
             description=row.get("desc"),
         )

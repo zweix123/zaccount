@@ -52,12 +52,13 @@ Commit `uv.lock` when dependencies change.
 The legacy CSV field order is:
 
 ```text
-date,account,type,amount,categorys,tags,desc
+date,account,type,amount,categories,tags,desc
 ```
 
-Keep the misspelled `categorys` name at the CSV adapter seam. Use `categories` and
-“category path” everywhere else. Do not change the durable schema without a
-documented migration that preserves existing personal data.
+Use `categories` and “category path” everywhere. The former `categorys` header is
+not supported; users upgrading from the old schema must rename that header before
+running Zaccount. Do not change the durable schema without a documented migration
+that preserves existing personal data.
 
 Amounts are positive decimals. Initial balance, income, and transfer-in add funds;
 expense and transfer-out subtract funds. Initial balances have no category and are
